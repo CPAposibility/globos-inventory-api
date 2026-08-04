@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Registro de Globos" />
+  <meta name="description" content="Aplicación para registrar y gestionar mercancía de globos" />
+  <meta name="theme-color" content="#2563eb" />
+  <title>Registro de Globos</title>
+  <link rel="stylesheet" href="styles/formulario2.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="header-with-buttons">
+      <h1>Registro de Globos</h1>
+      <div class="button-group">
+        <button type="button" id="btn-foto" class="cam-button" aria-label="Tomar foto">📷</button>
+        <button type="button" id="btn-archivo" class="cam-button" aria-label="Seleccionar archivo">📁</button>
+      </div>
+    </div>
+
+    <form id="form-globos">
+      <!-- Fila 1: Marca - Estilo -->
+      <div class="row">
+        <div class="field">
+          <label for="marca">Marca</label>
+          <select id="marca" name="marca" required>
+            <option value="">Cargando marcas...</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="estilo">Estilo</label>
+          <select id="estilo" name="estilo" required disabled>
+            <option value="">Selecciona estilo</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Fila 2: Tamaño - Color -->
+      <div class="row">
+        <div class="field">
+          <label for="tamano">Tamaño (")</label>
+          <select id="tamano" name="tamano" required disabled>
+            <option value="">Selecciona tamaño</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="color">Color</label>
+          <select id="color" name="color" required disabled>
+            <option value="">Selecciona color</option>
+          </select>
+          <small id="color-extra" class="hint"></small>
+          <div id="derivado-wrapper" style="display:none; margin-top:8px;">
+            <input type="text" id="color-derivado" name="colorDerivado" placeholder="Derivado (ej. verde lima)" disabled />
+          </div>
+        </div>
+      </div>
+
+      <!-- Fila 3: Ubicación - Tipo de movimiento (NUEVO) -->
+      <div class="row">
+        <div class="field">
+          <label for="ubicacion">Ubicación</label>
+          <select id="ubicacion" name="ubicacion" required disabled>
+            <option value="">Selecciona ubicación</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="tipo_movimiento">Tipo de movimiento</label>
+          <select id="tipo_movimiento" name="tipo_movimiento" required disabled>
+            <option value="entrada">Entrada</option>
+            <option value="salida">Salida</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Fila 4: Cantidad -->
+      <div class="row">
+        <div class="field">
+          <label for="cantidad">Cantidad</label>
+          <input
+            type="number"
+            id="cantidad"
+            name="cantidad"
+            min="1"
+            required
+            disabled
+          />
+        </div>
+      </div>
+
+      <!-- Fila 5: Código autogenerado -->
+      <div class="row">
+        <div class="field full">
+          <label for="codigo">Código interno</label>
+          <input type="text" id="codigo" name="codigo" readonly />
+        </div>
+      </div>
+
+      <!-- Fila 6: Previsualización -->
+      <div class="preview">
+        <h2>Previsualización</h2>
+        <p id="preview-text">Completa los campos para ver el resumen.</p>
+      </div>
+
+      <div class="actions">
+        <button type="button" id="btn-nuevo-producto" class="btn-secondary">+ Agregar nuevo producto</button>
+        <button type="submit" id="btn-guardar">Guardar</button>
+      </div>
+    </form>
+
+    <!-- Inputs de archivo (ocultos) -->
+    <input type="file" name="foto_producto" id="foto_producto_input" accept="image/*" capture="environment" style="display:none">
+    <input type="file" name="foto_archivo" id="foto_archivo_input" accept="image/*" style="display:none">
+
+    <!-- Cámara overlay/modal -->
+    <div id="cam-overlay" class="cam-overlay" aria-hidden="true">
+      <div class="cam-modal" role="dialog" aria-label="Cámara">
+        <video id="cam_video" autoplay playsinline></video>
+        <div class="cam-controls">
+          <button type="button" id="cam_capture" class="cam-capture">Tomar foto</button>
+          <button type="button" id="cam_close" class="cam-close" aria-label="Cerrar cámara">Cerrar</button>
+        </div>
+        <canvas id="cam_canvas" style="display:none"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="form-globos.js"></script>
+</body>
+</html>
