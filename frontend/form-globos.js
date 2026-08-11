@@ -7,6 +7,23 @@
  *   solo se previsualiza, todavía no se sube al servidor (pendiente futuro)
  */
 
+// Cada caja completa contiene 100 bolsas. El campo "cantidad" del
+// formulario siempre representa número de CAJAS (0.5, 1, 1.5, 2...),
+// nunca bolsas sueltas — así se guarda también en la base de datos.
+const BOLSAS_POR_CAJA = 100;
+
+// Redondea al múltiplo de 0.5 más cercano y nunca deja bajar de 0.5,
+// para que sea imposible capturar algo como "0.3 cajas" desde el input.
+function normalizarCantidadCajas(valor) {
+  const num = parseFloat(valor);
+  if (isNaN(num) || num <= 0) return 0;
+  return Math.round(num * 2) / 2;
+}
+
+function calcularBolsas(cantidadCajas) {
+  return normalizarCantidadCajas(cantidadCajas) * BOLSAS_POR_CAJA;
+}
+
 function normalizarTexto(texto) {
   if (!texto) return "";
   return texto
@@ -41,6 +58,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const ubicacionSelect = document.getElementById('ubicacion');
   const tipoMovimientoSelect = document.getElementById('tipo_movimiento');
   const cantidadInput = document.getElementById('cantidad');
+  const cantidadHint = document.getElementById('cantidad-hint');
   const codigoInput = document.getElementById('codigo');
   const previewText = document.getElementById('preview-text');
   const form = document.getElementById('form-globos');
@@ -224,10 +242,14 @@ document.addEventListener('DOMContentLoaded', function () {
     let colorText = color.color;
     if (derivado) colorText += ` (${derivado})`;
 
+    const cajas = normalizarCantidadCajas(cantidad);
+    const bolsas = calcularBolsas(cantidad);
+    const etiquetaCajas = cajas === 1 ? '1 caja' : `${cajas} cajas`;
+
     previewText.innerHTML = `
       <strong>${marca.nombre}</strong> ${estilo.estilo} |
       ${tamano.tamano}" | ${colorText}<br>
-      <em>${tipo === 'entrada' ? 'Entrada' : 'Salida'} de ${cantidad} globos — ${ubicacion.nombre}</em>
+      <em>${tipo === 'entrada' ? 'Entrada' : 'Salida'} de ${etiquetaCajas} (${bolsas} bolsas) — ${ubicacion.nombre}</em>
     `;
   }
 
@@ -337,7 +359,32 @@ document.addEventListener('DOMContentLoaded', function () {
       updatePreview();
     });
   }
-  cantidadInput.addEventListener('input', updatePreview);
+  // Muestra en vivo cuántas bolsas representa lo que el usuario está
+  // escribiendo (ej. "2.5 cajas = 250 bolsas"), y avisa si el valor no
+  // es un múltiplo válido de 0.5 (media caja).
+  function actualizarHintCantidad() {
+    if (!cantidadHint) return;
+    const valor = cantidadInput.value;
+    if (!valor) {
+      cantidadHint.textContent = '1 caja = 100 bolsas · 0.5 = media caja (50 bolsas)';
+      cantidadHint.classList.remove('hint-error');
+      return;
+    }
+    const num = parseFloat(valor);
+    const esMultiploValido = Number.isInteger(num * 2);
+    if (!esMultiploValido || num <= 0) {
+      cantidadHint.textContent = '⚠ La cantidad debe ser en unidades de media caja (0.5, 1, 1.5, 2...)';
+      cantidadHint.classList.add('hint-error');
+      return;
+    }
+    cantidadHint.classList.remove('hint-error');
+    cantidadHint.textContent = `= ${calcularBolsas(num)} bolsas totales`;
+  }
+
+  cantidadInput.addEventListener('input', function () {
+    actualizarHintCantidad();
+    updatePreview();
+  });
   ubicacionSelect.addEventListener('change', updatePreview);
   tipoMovimientoSelect.addEventListener('change', updatePreview);
 
@@ -355,6 +402,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const cantidad = Number(cantidadInput.value);
     const codigo_interno = codigoInput.value;
     const derivado = colorDerivadoInput ? colorDerivadoInput.value.trim() : '';
+
+    // Respaldo del lado del cliente: el backend también valida esto,
+    // pero es mejor avisar aquí antes de gastar una llamada a la API.
+    if (cantidad <= 0 || !Number.isInteger(cantidad * 2)) {
+      showToast('✗ La cantidad debe ser en unidades de media caja (0.5, 1, 1.5, 2...)', 4000);
+      return;
+    }
 
     btnGuardar.disabled = true;
     btnGuardar.textContent = 'Guardando...';
