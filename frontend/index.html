@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <!-- viewport-fit=cover + las meta de Apple de abajo son las mismas
+       que ya usa formulario2.html, para que ambas páginas se comporten
+       igual como "app" en iOS (pantalla completa, sin zoom accidental) -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="El Guateque" />
+  <meta name="description" content="Herramienta interna de El Guateque para gestión de mercancía de globos" />
+  <meta name="theme-color" content="#2563eb" />
+  <title>El Guateque - El plus de tu fiesta</title>
+  <link rel="stylesheet" href="styles/homepage.css" />
+</head>
+<body>
+  <div class="overlay">
+    <div class="content">
+      <h1 class="title">El Guateque</h1>
+      <p class="subtitle">El plus de tu fiesta</p>
+
+      <div class="cta-group">
+        <!-- TODO: aún no existe una página de catálogo — se deja
+             deshabilitado hasta que se construya esa vista -->
+        <button class="btn btn-primary" disabled title="Próximamente">
+          Ver Catálogo
+        </button>
+
+        <!-- Ya existe y funciona: lleva al formulario de registro
+             de entradas/salidas que ya está en producción -->
+        <button
+          class="btn btn-secondary"
+          onclick="window.location.href = 'formulario2.html';"
+        >
+          Entrada/Salida de Mercancía
+        </button>
+
+        <!-- TODO: aún no existe la vista de gestión de empleados —
+             deshabilitado hasta que se construya -->
+        <button class="btn btn-tertiary" disabled title="Próximamente">
+          Agregar/Remover Empleados
+        </button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
