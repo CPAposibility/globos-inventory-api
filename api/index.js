@@ -8,8 +8,13 @@ import globoRoutes from './v1/globo/routers.js';
 import ubicacionRoutes from './v1/ubicacion/routers.js';
 import movimientoRoutes from './v1/movimiento/routers.js';
 import inventarioRoutes from './v1/inventario/routers.js';
+import authRoutes from './v1/auth/routers.js';
 
 const router = Router();
+
+// Login/logout/me — sus propias reglas de acceso viven dentro de
+// auth/routers.js y en el middleware apiGuard (ver middlewares/apiGuard.js)
+router.use('/v1/auth', authRoutes);
 
 router.use('/v1/marca', marcaRoutes);
 router.use('/v1/estilo', estiloRoutes);

@@ -11,6 +11,7 @@ import Color from "./color.js";
 import Globo from "./globo.js";
 import Ubicacion from "./ubicacion.js";
 import Movimiento from "./movimiento.js";
+import Usuario from "./usuario.js";
 
 // Color pertenece a Marca (los colores varían según la marca)
 Marca.hasMany(Color, { foreignKey: "id_marca" });
@@ -36,4 +37,13 @@ Movimiento.belongsTo(Globo, { foreignKey: "id_globo" });
 Ubicacion.hasMany(Movimiento, { foreignKey: "id_ubicacion" });
 Movimiento.belongsTo(Ubicacion, { foreignKey: "id_ubicacion" });
 
-export { Marca, Estilo, Tamano, Color, Globo, Ubicacion, Movimiento };
+// Un usuario puede pertenecer opcionalmente a una ubicación (tienda/almacén)
+Ubicacion.hasMany(Usuario, { foreignKey: "id_ubicacion" });
+Usuario.belongsTo(Ubicacion, { foreignKey: "id_ubicacion" });
+
+// Cada movimiento queda ligado a la persona que lo capturó.
+// Esto es lo que permite responder "¿quién registró esta entrada/salida?"
+Usuario.hasMany(Movimiento, { foreignKey: "id_usuario" });
+Movimiento.belongsTo(Usuario, { foreignKey: "id_usuario" });
+
+export { Marca, Estilo, Tamano, Color, Globo, Ubicacion, Movimiento, Usuario };

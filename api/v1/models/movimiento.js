@@ -15,6 +15,18 @@ const Movimiento = sequelize.define("Movimiento", {
     type: DataTypes.INTEGER,
     allowNull: false
   },
+
+  // Quién capturó este movimiento. Se llena automáticamente en el
+  // backend a partir de la sesión del usuario logueado (nunca se
+  // confía en un valor que mande el frontend directamente, para que
+  // nadie pueda registrar un movimiento "a nombre de otra persona").
+  // Permite NULL porque los movimientos de prueba creados antes del
+  // sistema de login no tienen usuario asociado.
+  id_usuario: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
+
   tipo_movimiento: {
     type: DataTypes.STRING(10),
                                     allowNull: false,
