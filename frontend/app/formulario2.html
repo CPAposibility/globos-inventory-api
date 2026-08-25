@@ -14,6 +14,14 @@
 </head>
 <body>
   <div class="container">
+    <!-- Barra de sesión: muestra quién está logueado y permite cerrar
+         sesión. session.js llena #user-name al cargar la página
+         (llamando a GET /api/v1/auth/me) y maneja el clic de #btn-logout. -->
+    <div class="session-bar">
+      <span id="user-name">Cargando...</span>
+      <button type="button" id="btn-logout" class="btn-logout">Cerrar sesión</button>
+    </div>
+
     <div class="header-with-buttons">
       <h1>Registro de Globos</h1>
       <div class="button-group">
@@ -146,6 +154,7 @@
     </div>
   </div>
 
+  <script src="/session.js"></script>
   <script src="config.js"></script>
   <script src="form-globos.js"></script>
 </body>

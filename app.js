@@ -15,6 +15,7 @@ import "./api/v1/config/db.js";
 import "./api/v1/models/index.js";
 import apiRouter from "./api/index.js";
 import apiGuard from "./api/v1/middlewares/apiGuard.js";
+import requireAppSession from "./api/v1/middlewares/requireAppSession.js";
 
 // __dirname no existe de forma nativa en ES Modules, hay que reconstruirlo
 // a partir de import.meta.url. Lo necesitamos para armar la ruta absoluta
@@ -29,6 +30,11 @@ app.use(express.json());
 // Necesario para leer la cookie "token" que pone auth/controller.js
 // al hacer login. Sin esto, req.cookies siempre estaría vacío.
 app.use(cookieParser());
+
+// Protege todo lo que esté bajo /app/ (la herramienta interna) —
+// si no hay sesión válida, redirige a /login.html ANTES de que
+// express.static llegue a entregar el archivo pedido.
+app.use(requireAppSession);
 
 // Sirve todos los archivos de la carpeta frontend/ (formulario2.html,
 // form-globos.js, config.js, styles/, etc.) como archivos estáticos.

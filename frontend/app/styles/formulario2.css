@@ -1,0 +1,572 @@
+/* ===========================================================
+   Variables globales (design tokens)
+   Cambiar un color aquí lo actualiza en todo el formulario,
+   ya que el resto del archivo usa var(--nombre) en vez de
+   colores fijos escritos a mano.
+   =========================================================== */
+:root {
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --primary-light: rgba(37, 99, 235, 0.1);
+  --bg: #f3f4f6;
+  --card: #ffffff;
+  --text: #111827;
+  --text-secondary: #6b7280;
+  --border: #d1d5db;
+  --disabled-bg: #f9fafb;
+  --disabled-text: #9ca3af;
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+  /* Color de error, usado por ejemplo cuando la cantidad de cajas
+     capturada no es un múltiplo válido de 0.5 (ver .hint-error abajo) */
+  --error: #dc2626;
+  --error-light: rgba(220, 38, 38, 0.1);
+}
+
+/* Reset básico: todo hereda la misma tipografía y usa box-sizing
+   "border-box" para que padding/border no rompan los anchos calculados */
+* {
+  box-sizing: border-box;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  /* Evita que el usuario seleccione texto por accidente al tocar
+     la pantalla repetidamente en un celular (se siente como app nativa) */
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Tarjeta principal que envuelve todo el formulario.
+   En pantallas chicas ocupa el 100% del ancho (como una app);
+   en pantallas más grandes (>=480px) se centra como una tarjeta
+   flotante con sombra, gracias al media query de abajo. */
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  background: var(--card);
+  padding: 16px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  /* iOS safe area support: evita que el contenido quede
+     debajo del notch o la barra inferior en iPhones */
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+
+@media (min-width: 480px) {
+  .container {
+    padding: 24px;
+    margin: 16px auto;
+    border-radius: 12px;
+    box-shadow: var(--shadow-md);
+  }
+}
+
+h1 {
+  margin: 0 0 24px;
+  font-size: clamp(20px, 5vw, 28px);
+  color: var(--text);
+  font-weight: 700;
+}
+
+/* Barra de sesión, arriba del todo: muestra quién está logueado
+   y el botón para cerrar sesión. session.js llena #user-name y
+   maneja el clic de #btn-logout. */
+.session-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.btn-logout {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.btn-logout:hover {
+  background: var(--disabled-bg);
+  color: var(--text);
+}
+
+/* Header con botones */
+.header-with-buttons {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.header-with-buttons h1 {
+  margin: 0;
+  flex: 1;
+}
+
+.button-group {
+  display: flex;
+  gap: 8px;
+}
+
+/* .row agrupa 2 campos lado a lado (ej. Marca + Estilo).
+   .field es cada campo individual dentro de una fila. */
+.row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.field {
+  flex: 1;
+  min-width: 100%; /* en celular, cada campo ocupa toda la fila */
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 480px) {
+  .field {
+    min-width: 200px; /* en pantallas más grandes, 2 campos caben lado a lado */
+  }
+}
+
+/* .field.full fuerza a un campo a ocupar toda la fila,
+   sin importar el ancho de pantalla (ej. Código interno) */
+.field.full {
+  flex: 1 1 100%;
+}
+
+label {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--text);
+  display: block;
+}
+
+/* Estilo compartido para todos los campos de captura (selects e inputs).
+   min-height: 44px cumple el tamaño mínimo táctil recomendado
+   por Apple/Google para que sea fácil tocar con el dedo. */
+select,
+input[type="number"],
+input[type="text"] {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 16px;
+  background: var(--card);
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  /* Quita el estilo nativo del navegador/SO para que se vea igual
+     en iOS, Android y desktop */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  min-height: 44px;
+}
+
+/* Flechita personalizada para los <select>, ya que appearance:none
+   quita también la flecha nativa del navegador */
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%232563eb' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+  cursor: pointer;
+}
+
+select:focus,
+input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light);
+  background-color: #fafbff;
+}
+
+/* Campos deshabilitados (ej. Estilo antes de elegir Marca) se ven
+   claramente apagados, para que el usuario entienda que debe
+   completar un paso anterior primero */
+select:disabled,
+input:disabled {
+  background: var(--disabled-bg);
+  color: var(--disabled-text);
+  cursor: not-allowed;
+}
+
+/* Campos de solo lectura (ej. Código interno autogenerado) */
+input[type="text"]:read-only {
+  background: var(--disabled-bg);
+  color: var(--text-secondary);
+  cursor: default;
+}
+
+/* Texto de ayuda pequeño debajo de un campo
+   (ej. "1 caja = 100 bolsas..." bajo el input de Cantidad) */
+.hint {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  display: block;
+}
+
+/* Variante de .hint para cuando el valor capturado no es válido
+   (ej. cantidad de cajas que no es múltiplo de 0.5).
+   Se agrega/quita dinámicamente desde form-globos.js con
+   classList.add('hint-error') / classList.remove('hint-error'). */
+.hint.hint-error {
+  color: var(--error);
+  font-weight: 600;
+}
+
+/* Caja de "Previsualización" al final del formulario, donde se
+   muestra el resumen en vivo (marca, color, cantidad de cajas
+   convertida a bolsas, etc.) mientras el usuario va llenando */
+.preview {
+  margin-top: 24px;
+  padding: 16px;
+  border-radius: 10px;
+  background: var(--disabled-bg);
+  border: 1px solid var(--border);
+}
+
+.preview h2 {
+  margin: 0 0 12px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.preview p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* Botones "Agregar nuevo producto" / "Guardar" al final del form.
+   En celular se apilan verticalmente (column-reverse pone el botón
+   principal "Guardar" arriba, más cerca del pulgar) */
+.actions {
+  margin-top: 24px;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+@media (max-width: 480px) {
+  .actions {
+    justify-content: stretch;
+    flex-direction: column-reverse;
+  }
+}
+
+button[type="submit"],
+.btn-secondary {
+  min-height: 44px;
+  padding: 12px 24px;
+  border-radius: 8px;
+  border: none;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, opacity 0.2s ease, transform 0.05s ease;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  flex: 1;
+}
+
+button[type="submit"] {
+  background: var(--primary);
+  max-width: 200px;
+}
+
+.btn-secondary {
+  background: #6b7280;
+  color: #ffffff;
+  max-width: none;
+}
+
+button[type="submit"]:hover:not(:active) {
+  background: var(--primary-hover);
+}
+
+.btn-secondary:hover:not(:active) {
+  background: #4b5563;
+}
+
+button[type="submit"]:active,
+.btn-secondary:active {
+  opacity: 0.9;
+  transform: scale(0.98);
+}
+
+button[type="submit"]:disabled,
+.btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 480px) {
+  button[type="submit"],
+  .btn-secondary {
+    flex: 1;
+    max-width: none;
+  }
+}
+
+/* Botón de cámara */
+/* Botones circulares de 📷 tomar foto y 📁 seleccionar archivo,
+   junto al título del formulario */
+.cam-button {
+  background: #e0e7ff;
+  border: 1px solid var(--border);
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1.2rem;
+  line-height: 1;
+  transition: background-color 0.2s ease, transform 0.05s ease;
+  flex-shrink: 0;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  min-height: 44px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cam-button:hover:not(:active) {
+  background: #c7d2fe;
+}
+
+.cam-button:active {
+  background: #c7d2fe;
+  transform: scale(0.95);
+}
+
+@media (max-width: 480px) {
+  .button-group {
+    flex-direction: row;
+  }
+
+  .cam-button {
+    padding: 8px 10px;
+    font-size: 1rem;
+  }
+}
+
+/* Modal de cámara: overlay oscuro de pantalla completa que aparece
+   al presionar el botón 📷, con la vista en vivo de la cámara */
+.cam-overlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 1200;
+}
+
+.cam-overlay.visible {
+  display: flex;
+}
+
+.cam-modal {
+  background: var(--card);
+  padding: 12px;
+  border-radius: 12px;
+  width: 95vw;
+  max-width: 500px;
+  max-height: 85vh;
+  box-shadow: 0 20px 25px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+
+.cam-modal video {
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  background: #000;
+  max-height: 60vh;
+}
+
+.cam-controls {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.cam-capture,
+.cam-close {
+  flex: 1;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 16px;
+  border: none;
+  min-height: 44px;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  transition: opacity 0.2s ease, transform 0.05s ease;
+}
+
+.cam-capture {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.cam-capture:hover:not(:active) {
+  background: var(--primary-hover);
+}
+
+.cam-capture:active {
+  opacity: 0.9;
+  transform: scale(0.98);
+}
+
+.cam-close {
+  background: var(--disabled-bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.cam-close:hover:not(:active) {
+  background: var(--border);
+}
+
+.cam-close:active {
+  opacity: 0.8;
+  transform: scale(0.98);
+}
+
+/* Notificación flotante ("toast") que aparece arriba de la pantalla
+   tras guardar un movimiento, o al mostrar un mensaje de error
+   (ej. "cantidad debe ser múltiplo de 0.5") */
+.toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-100px);
+  background: rgba(0, 0, 0, 0.9);
+  color: #fff;
+  padding: 12px 16px;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  z-index: 1400;
+  font-size: 14px;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Modo oscuro automático: si el sistema operativo del usuario está
+   en dark mode, estas variables sobreescriben las de :root y todo
+   el formulario cambia de colores sin necesitar JavaScript */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111827;
+    --card: #1f2937;
+    --text: #f3f4f6;
+    --text-secondary: #d1d5db;
+    --border: #374151;
+    --disabled-bg: #374151;
+    --disabled-text: #9ca3af;
+    --error: #f87171;
+    --error-light: rgba(248, 113, 113, 0.15);
+  }
+
+  select,
+  input[type="number"],
+  input[type="text"] {
+    background: #374151;
+  }
+
+  input[type="text"]:read-only {
+    background: #4b5563;
+  }
+}
+
+/* Mejoras adicionales para UX */
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Efecto visual de deshabilitado más claro */
+select:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+input:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Mejora en el foco para accesibilidad */
+select:focus,
+input:focus {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+/* Soporte para navegación por teclado */
+*:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Respeta preferencias de movimiento del usuario
+   (nota: este bloque estaba duplicado en el archivo original,
+   aquí se dejó una sola vez) */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

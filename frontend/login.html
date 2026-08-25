@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="El Guateque" />
+  <meta name="theme-color" content="#2563eb" />
+  <title>Iniciar sesión - El Guateque</title>
+  <link rel="stylesheet" href="app/styles/formulario2.css" />
+  <style>
+    /* Estilos específicos de esta página. Reutiliza las variables de
+       formulario2.css (--primary, --border, etc.) para verse consistente
+       con el resto de la herramienta interna, sin duplicar toda la hoja. */
+    .login-container {
+      max-width: 380px;
+      margin: 0 auto;
+      min-height: 100vh;
+      min-height: 100svh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 24px;
+      box-sizing: border-box;
+    }
+
+    .login-title {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .login-title h1 {
+      margin: 0 0 4px;
+      font-size: 1.6rem;
+    }
+
+    .login-title p {
+      margin: 0;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+
+    #login-error {
+      display: none;
+      background: var(--error-light);
+      color: var(--error);
+      border: 1px solid var(--error);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+
+    #login-error.visible {
+      display: block;
+    }
+
+    #btn-login {
+      width: 100%;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-title">
+      <h1>El Guateque</h1>
+      <p>Inicia sesión para continuar</p>
+    </div>
+
+    <div id="login-error"></div>
+
+    <form id="form-login">
+      <div class="field" style="margin-bottom: 16px;">
+        <label for="usuario">Usuario</label>
+        <input type="text" id="usuario" name="usuario" autocomplete="username" required />
+      </div>
+
+      <div class="field" style="margin-bottom: 16px;">
+        <label for="password">Contraseña</label>
+        <input type="password" id="password" name="password" autocomplete="current-password" required />
+      </div>
+
+      <button type="submit" id="btn-login">Iniciar sesión</button>
+    </form>
+  </div>
+
+  <script>
+    const form = document.getElementById('form-login');
+    const errorBox = document.getElementById('login-error');
+    const btnLogin = document.getElementById('btn-login');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorBox.classList.remove('visible');
+      btnLogin.disabled = true;
+      btnLogin.textContent = 'Entrando...';
+
+      const usuario = document.getElementById('usuario').value.trim();
+      const password = document.getElementById('password').value;
+
+      try {
+        const res = await fetch('/api/v1/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          // credentials: 'include' asegura que el navegador guarde la
+          // cookie httpOnly que regresa el servidor, incluso si en el
+          // futuro esta página se sirviera desde otro subdominio.
+          credentials: 'include',
+          body: JSON.stringify({ usuario, password })
+        });
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.message || 'No se pudo iniciar sesión');
+        }
+
+        // Login exitoso: la cookie ya quedó guardada por el navegador,
+        // solo falta llevar al usuario a la herramienta interna.
+        window.location.href = 'app/formulario2.html';
+      } catch (err) {
+        errorBox.textContent = err.message;
+        errorBox.classList.add('visible');
+        btnLogin.disabled = false;
+        btnLogin.textContent = 'Iniciar sesión';
+      }
+    });
+  </script>
+</body>
+</html>
