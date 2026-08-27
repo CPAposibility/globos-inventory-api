@@ -1,4 +1,5 @@
 import { Globo, Marca, Estilo, Tamano, Color } from "../models/index.js";
+import { subirImagenBlob } from "../config/blobStorage.js";
 
 // Catálogos que se incluyen automáticamente cada vez que se consulta un globo,
 // para que la respuesta venga con los datos completos de marca/estilo/tamaño/color
@@ -116,6 +117,51 @@ const controller = {
       if (!item) return res.status(404).json({ message: "Globo no encontrado" });
       await item.destroy();
       res.json({ message: "Globo eliminado", id });
+    } catch (err) {
+      next(err);
+    }
+  /**
+   * POST /api/v1/globo/:id/foto
+   * Recibe un archivo de imagen (campo "foto" en form-data) y lo sube
+   * a Azure Blob Storage, guardando la URL resultante en foto_url.
+   *
+   * Regla de negocio especial (distinta al resto de /v1/globo):
+   *   - Si el producto NO tiene foto todavía, cualquier usuario logueado
+   *     puede subirla (útil para que un empleado la tome en tienda).
+   *   - Si YA tiene una foto, solo "admin" puede reemplazarla — así se
+   *     evita que alguien sin autorización cambie la imagen de referencia
+   *     que ya se usa en catálogo/reportes.
+   *
+   * req.usuario ya viene puesto por apiGuard (ver middlewares/apiGuard.js),
+   * que valida la sesión antes de que la petición llegue aquí.
+   */
+  subirFoto: async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const item = await Globo.findByPk(id);
+
+      if (!item) {
+        return res.status(404).json({ message: "Globo no encontrado" });
+      }
+
+      if (item.foto_url && req.usuario.rol !== "admin") {
+        return res.status(403).json({
+          message: "Este producto ya tiene una foto. Solo un administrador puede reemplazarla."
+        });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ message: "No se recibió ningún archivo (campo 'foto')" });
+      }
+
+      const foto_url = await subirImagenBlob(
+        req.file.buffer,
+        req.file.originalname,
+        req.file.mimetype
+      );
+
+      await item.update({ foto_url });
+      res.json(item);
     } catch (err) {
       next(err);
     }

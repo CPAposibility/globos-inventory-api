@@ -7,13 +7,24 @@ import jwt from "jsonwebtoken";
 // (catálogo: marca, estilo, tamaño, color, globo, ubicación).
 const RUTAS_ESCRITURA_EMPLEADO = ["/v1/movimiento"];
 
+// Igual que RUTAS_ESCRITURA_EMPLEADO, pero para rutas que necesitan
+// coincidir por patrón (con un id numérico en medio) en vez de un
+// prefijo fijo. Ej: /v1/globo/14/foto, /v1/globo/203/foto, etc.
+//
+// Subir la foto de un producto EXISTENTE se permite a cualquier
+// usuario logueado — la regla más fina de "solo admin puede
+// reemplazar una foto que ya existe" se valida dentro del controller
+// (globo/controller.js → subirFoto), porque ese matiz depende de un
+// dato (si ya hay foto o no) que este middleware no conoce.
+const REGEX_ESCRITURA_EMPLEADO = [/^\/v1\/globo\/\d+\/foto$/];
+
 /**
  * Middleware central que protege TODA la API bajo /api, con estas reglas:
  *   1. GET siempre es público (lectura de catálogo/inventario libre)
  *   2. /v1/auth/* nunca se bloquea aquí (login/logout tienen su propia lógica)
  *   3. Cualquier otro método (POST/PUT/DELETE) requiere sesión iniciada
- *   4. Dentro de eso, solo /v1/movimiento puede ser usado por "empleado";
- *      el resto de escrituras requieren rol "admin"
+ *   4. Dentro de eso, /v1/movimiento y /v1/globo/:id/foto pueden ser
+ *      usados por "empleado"; el resto de escrituras requieren rol "admin"
  *
  * Se aplica una sola vez en app.js, en vez de repetir esta lógica en
  * cada uno de los 8 módulos (marca, estilo, tamano, color, globo,
@@ -42,10 +53,14 @@ export default function apiGuard(req, res, next) {
   req.usuario = usuario;
 
   // 4. Reglas de permiso por rol
-  const esRutaDeEmpleado = RUTAS_ESCRITURA_EMPLEADO.some((ruta) => req.path.startsWith(ruta));
+  const esRutaDeEmpleado =
+    RUTAS_ESCRITURA_EMPLEADO.some((ruta) => req.path.startsWith(ruta)) ||
+    REGEX_ESCRITURA_EMPLEADO.some((regex) => regex.test(req.path));
+
   if (esRutaDeEmpleado || usuario.rol === "admin") {
     return next();
   }
 
   return res.status(403).json({ message: "No tienes permiso para realizar esta acción" });
 }
+

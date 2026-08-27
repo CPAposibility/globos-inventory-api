@@ -33,7 +33,13 @@ const Globo = sequelize.define("Globo", {
   costo_mayoreo: DataTypes.DECIMAL,
   costo_menudeo: DataTypes.DECIMAL,
   costo_caja: DataTypes.DECIMAL,
-  costo_media: DataTypes.DECIMAL
+  costo_media: DataTypes.DECIMAL,
+
+  // URL pública de la foto de referencia en Azure Blob Storage.
+  // Reglas de negocio (aplicadas en el controller, no aquí):
+  //   - Cualquier usuario logueado puede subir la PRIMERA foto
+  //   - Si ya existe una, solo "admin" puede reemplazarla
+  foto_url: DataTypes.STRING(500)
 }, {
   tableName: "globo",   // nombre real de la tabla en PostgreSQL
   timestamps: false     // esta tabla no usa createdAt/updatedAt
