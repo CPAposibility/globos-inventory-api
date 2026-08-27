@@ -7,23 +7,6 @@
  *   solo se previsualiza, todavía no se sube al servidor (pendiente futuro)
  */
 
-// Cada caja completa contiene 100 bolsas. El campo "cantidad" del
-// formulario siempre representa número de CAJAS (0.5, 1, 1.5, 2...),
-// nunca bolsas sueltas — así se guarda también en la base de datos.
-const BOLSAS_POR_CAJA = 100;
-
-// Redondea al múltiplo de 0.5 más cercano y nunca deja bajar de 0.5,
-// para que sea imposible capturar algo como "0.3 cajas" desde el input.
-function normalizarCantidadCajas(valor) {
-  const num = parseFloat(valor);
-  if (isNaN(num) || num <= 0) return 0;
-  return Math.round(num * 2) / 2;
-}
-
-function calcularBolsas(cantidadCajas) {
-  return normalizarCantidadCajas(cantidadCajas) * BOLSAS_POR_CAJA;
-}
-
 function normalizarTexto(texto) {
   if (!texto) return "";
   return texto
@@ -44,7 +27,14 @@ async function fetchJSON(url, options) {
   const res = await fetch(url, options);
   if (!res.ok) {
     const errBody = await res.json().catch(() => ({}));
-    throw new Error(errBody.message || `Error ${res.status} en ${url}`);
+    const error = new Error(errBody.message || `Error ${res.status} en ${url}`);
+    // Guardamos el código HTTP en el propio error (ej. 403, 404, 500).
+    // Esto permite que quien capture el error más adelante (como el
+    // manejador del submit) pueda reaccionar distinto según el tipo
+    // de problema — por ejemplo, un 403 casi siempre significa "no
+    // tienes permiso para esto", no un error técnico real.
+    error.status = res.status;
+    throw error;
   }
   return res.json();
 }
@@ -58,7 +48,6 @@ document.addEventListener('DOMContentLoaded', function () {
   const ubicacionSelect = document.getElementById('ubicacion');
   const tipoMovimientoSelect = document.getElementById('tipo_movimiento');
   const cantidadInput = document.getElementById('cantidad');
-  const cantidadHint = document.getElementById('cantidad-hint');
   const codigoInput = document.getElementById('codigo');
   const previewText = document.getElementById('preview-text');
   const form = document.getElementById('form-globos');
@@ -75,6 +64,11 @@ document.addEventListener('DOMContentLoaded', function () {
   const closeBtn = document.getElementById('cam_close');
   const canvas = document.getElementById('cam_canvas');
   let stream = null;
+
+  // Guarda el archivo (File o Blob) de la foto que el usuario tomó o
+  // seleccionó, hasta que se suba al servidor al guardar el movimiento.
+  // Es opcional: si queda en null, el movimiento se guarda sin foto.
+  let fotoSeleccionada = null;
 
   // Catálogo cargado desde la API (se llena en cargarCatalogoInicial)
   const CATALOGO = {
@@ -147,7 +141,17 @@ document.addEventListener('DOMContentLoaded', function () {
     overlay.classList.remove('visible');
     overlay.setAttribute('aria-hidden', 'true');
     stopStream();
-    showToast('✓ Foto capturada (aún no se sube al servidor)');
+
+    // canvas.toBlob es asíncrono (recibe un callback), por eso
+    // fotoSeleccionada se asigna dentro de él, no justo después.
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        showToast('✗ No se pudo capturar la foto, intenta de nuevo');
+        return;
+      }
+      fotoSeleccionada = blob;
+      showToast('✓ Foto lista — se subirá al guardar');
+    }, 'image/jpeg', 0.9);
   });
 
   closeBtn && closeBtn.addEventListener('click', () => {
@@ -168,14 +172,16 @@ document.addEventListener('DOMContentLoaded', function () {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) { showToast('Selecciona una imagen válida'); return; }
-    showToast('✓ Foto agregada (aún no se sube al servidor)');
+    fotoSeleccionada = file;
+    showToast('✓ Foto lista — se subirá al guardar');
   });
 
   fileInputLocal && fileInputLocal.addEventListener('change', (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) { showToast('Selecciona una imagen válida'); return; }
-    showToast('✓ Foto agregada (aún no se sube al servidor)');
+    fotoSeleccionada = file;
+    showToast('✓ Foto lista — se subirá al guardar');
   });
 
   // ---------- Helpers de catálogo ----------
@@ -242,14 +248,10 @@ document.addEventListener('DOMContentLoaded', function () {
     let colorText = color.color;
     if (derivado) colorText += ` (${derivado})`;
 
-    const cajas = normalizarCantidadCajas(cantidad);
-    const bolsas = calcularBolsas(cantidad);
-    const etiquetaCajas = cajas === 1 ? '1 caja' : `${cajas} cajas`;
-
     previewText.innerHTML = `
       <strong>${marca.nombre}</strong> ${estilo.estilo} |
       ${tamano.tamano}" | ${colorText}<br>
-      <em>${tipo === 'entrada' ? 'Entrada' : 'Salida'} de ${etiquetaCajas} (${bolsas} bolsas) — ${ubicacion.nombre}</em>
+      <em>${tipo === 'entrada' ? 'Entrada' : 'Salida'} de ${cantidad} globos — ${ubicacion.nombre}</em>
     `;
   }
 
@@ -359,32 +361,7 @@ document.addEventListener('DOMContentLoaded', function () {
       updatePreview();
     });
   }
-  // Muestra en vivo cuántas bolsas representa lo que el usuario está
-  // escribiendo (ej. "2.5 cajas = 250 bolsas"), y avisa si el valor no
-  // es un múltiplo válido de 0.5 (media caja).
-  function actualizarHintCantidad() {
-    if (!cantidadHint) return;
-    const valor = cantidadInput.value;
-    if (!valor) {
-      cantidadHint.textContent = '1 caja = 100 bolsas · 0.5 = media caja (50 bolsas)';
-      cantidadHint.classList.remove('hint-error');
-      return;
-    }
-    const num = parseFloat(valor);
-    const esMultiploValido = Number.isInteger(num * 2);
-    if (!esMultiploValido || num <= 0) {
-      cantidadHint.textContent = '⚠ La cantidad debe ser en unidades de media caja (0.5, 1, 1.5, 2...)';
-      cantidadHint.classList.add('hint-error');
-      return;
-    }
-    cantidadHint.classList.remove('hint-error');
-    cantidadHint.textContent = `= ${calcularBolsas(num)} bolsas totales`;
-  }
-
-  cantidadInput.addEventListener('input', function () {
-    actualizarHintCantidad();
-    updatePreview();
-  });
+  cantidadInput.addEventListener('input', updatePreview);
   ubicacionSelect.addEventListener('change', updatePreview);
   tipoMovimientoSelect.addEventListener('change', updatePreview);
 
@@ -403,13 +380,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const codigo_interno = codigoInput.value;
     const derivado = colorDerivadoInput ? colorDerivadoInput.value.trim() : '';
 
-    // Respaldo del lado del cliente: el backend también valida esto,
-    // pero es mejor avisar aquí antes de gastar una llamada a la API.
-    if (cantidad <= 0 || !Number.isInteger(cantidad * 2)) {
-      showToast('✗ La cantidad debe ser en unidades de media caja (0.5, 1, 1.5, 2...)', 4000);
-      return;
-    }
-
     btnGuardar.disabled = true;
     btnGuardar.textContent = 'Guardando...';
 
@@ -422,17 +392,31 @@ document.addEventListener('DOMContentLoaded', function () {
       if (existentes.length > 0) {
         globo = existentes[0];
       } else {
-        globo = await fetchJSON(`${API_BASE}/globo`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id_marca, id_estilo, id_tamano, id_color, codigo_interno })
-        });
+        // Crear un producto (globo) NUEVO está restringido solo a
+        // usuarios "admin" (ver api/v1/middlewares/apiGuard.js en el
+        // backend). Si un empleado llega aquí porque el producto no
+        // existía todavía, el backend responde 403 — lo capturamos
+        // aparte para dar un mensaje claro en vez del genérico.
+        try {
+          globo = await fetchJSON(`${API_BASE}/globo`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ id_marca, id_estilo, id_tamano, id_color, codigo_interno })
+          });
+        } catch (errCrear) {
+          if (errCrear.status === 403) {
+            throw new Error('Este producto no existe todavía en el catálogo. Pide a un administrador que lo agregue primero.');
+          }
+          throw errCrear;
+        }
       }
 
       // 2) Registrar el movimiento real
       await fetchJSON(`${API_BASE}/movimiento`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           id_globo: globo.id_globo,
           id_ubicacion,
@@ -442,8 +426,54 @@ document.addEventListener('DOMContentLoaded', function () {
         })
       });
 
+      // 3) Si el usuario tomó/seleccionó una foto, subirla ahora.
+      //    Es opcional: si fotoSeleccionada es null, este bloque no
+      //    hace nada y el movimiento ya quedó guardado sin foto.
+      //
+      //    Este paso va DESPUÉS de guardar el movimiento a propósito:
+      //    si la foto falla por cualquier motivo (ej. el producto ya
+      //    tenía una foto y este usuario no es admin), el movimiento
+      //    de inventario ya se guardó de todos modos — no queremos
+      //    que un problema con la foto le impida a alguien registrar
+      //    su entrada/salida de mercancía.
+      if (fotoSeleccionada) {
+        try {
+          const datosFoto = new FormData();
+          // La clave "foto" debe coincidir exactamente con lo que
+          // espera el backend: upload.single("foto") en
+          // api/v1/globo/routers.js
+          datosFoto.append('foto', fotoSeleccionada, 'foto.jpg');
+
+          const resFoto = await fetch(`${API_BASE}/globo/${globo.id_globo}/foto`, {
+            method: 'POST',
+            credentials: 'include', // manda la cookie de sesión (httpOnly)
+            body: datosFoto
+            // OJO: NO se pone header 'Content-Type' aquí — el navegador
+            // lo arma solo (incluye el "boundary" necesario para
+            // FormData). Ponerlo a mano rompe la subida.
+          });
+
+          if (resFoto.ok) {
+            showToast(`✓ Movimiento guardado con foto — Código: ${codigo_interno}`);
+          } else if (resFoto.status === 403) {
+            // Este producto ya tenía foto y el usuario no es admin —
+            // no es un error grave, el movimiento sí se guardó bien.
+            showToast(`✓ Movimiento guardado — Código: ${codigo_interno}. (La foto no se actualizó: ya existe una y solo un admin puede reemplazarla)`, 6000);
+          } else {
+            showToast(`✓ Movimiento guardado — Código: ${codigo_interno}. (No se pudo subir la foto, intenta más tarde)`, 5000);
+          }
+        } catch (errFoto) {
+          // Error de red al subir la foto — igual, el movimiento ya
+          // se guardó, solo avisamos que la foto no se subió.
+          console.error('Error al subir foto:', errFoto);
+          showToast(`✓ Movimiento guardado — Código: ${codigo_interno}. (No se pudo subir la foto)`, 5000);
+        }
+      } else {
+        showToast(`✓ Movimiento guardado — Código: ${codigo_interno}`);
+      }
+
+      fotoSeleccionada = null; // limpiar para el siguiente producto
       stopStream();
-      showToast(`✓ Movimiento guardado — Código: ${codigo_interno}`);
 
       setTimeout(() => {
         form.reset();
@@ -471,6 +501,7 @@ document.addEventListener('DOMContentLoaded', function () {
   if (btnNuevoProducto) {
     btnNuevoProducto.addEventListener('click', function () {
       form.reset();
+      fotoSeleccionada = null; // evita subir por error la foto del producto anterior
       estiloSelect.innerHTML = '<option value="">Selecciona estilo</option>';
       tamanoSelect.innerHTML = '<option value="">Selecciona tamaño</option>';
       colorSelect.innerHTML = '<option value="">Selecciona color</option>';
