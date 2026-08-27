@@ -120,6 +120,8 @@ const controller = {
     } catch (err) {
       next(err);
     }
+  },
+
   /**
    * POST /api/v1/globo/:id/foto
    * Recibe un archivo de imagen (campo "foto" en form-data) y lo sube
