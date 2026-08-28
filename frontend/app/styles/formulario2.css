@@ -246,6 +246,28 @@ input[type="text"]:read-only {
   font-weight: 600;
 }
 
+/* Botón pequeño para acciones administrativas dentro de un campo
+   (ej. "+ Nuevo color" junto al selector de Color). Solo lo ven
+   usuarios con rol "admin" — form-globos.js controla su visibilidad. */
+.btn-admin-inline {
+  margin-top: 6px;
+  background: none;
+  border: 1px dashed var(--primary);
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: background-color 0.2s ease;
+}
+
+.btn-admin-inline:hover {
+  background: var(--primary-light);
+}
+
 /* Caja de "Previsualización" al final del formulario, donde se
    muestra el resumen en vivo (marca, color, cantidad de cajas
    convertida a bolsas, etc.) mientras el usuario va llenando */

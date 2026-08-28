@@ -30,6 +30,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (userNameEl) {
       userNameEl.textContent = `${usuario.nombre} (${usuario.rol})`;
     }
+
+    // Guardamos el usuario en una variable global, por si otro script
+    // en la página (ej. form-globos.js) necesita saber el rol para
+    // mostrar u ocultar botones administrativos.
+    window.usuarioActual = usuario;
+
+    // Disparamos un evento personalizado en vez de solo llenar la
+    // variable global, porque form-globos.js.js podría estar corriendo
+    // SU PROPIO "DOMContentLoaded" antes de que este fetch (asíncrono)
+    // termine — window.usuarioActual llegaría tarde. Escuchando este
+    // evento, cualquier script reacciona en el momento exacto en que
+    // el usuario ya está confirmado, sin importar el orden de carga.
+    document.dispatchEvent(new CustomEvent('sesion-lista', { detail: usuario }));
   } catch (err) {
     // Error de red u otro problema — por seguridad, tratamos como
     // sesión no confirmada y regresamos a login.

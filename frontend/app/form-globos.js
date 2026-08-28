@@ -327,6 +327,14 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   const derivadoWrapper = document.getElementById('derivado-wrapper');
+  const btnNuevoColor = document.getElementById('btn-nuevo-color');
+
+  // Se llena cuando session.js confirma quién es el usuario logueado
+  // (ver el listener del evento 'sesion-lista' más abajo). Empieza en
+  // false para que, mientras se confirma la sesión, el botón de admin
+  // se mantenga oculto por seguridad visual (aunque la protección
+  // real vive en el backend, no aquí).
+  let esAdmin = false;
 
   tamanoSelect.addEventListener('change', function () {
     colorSelect.innerHTML = '<option value="">Selecciona color</option>';
@@ -340,6 +348,16 @@ document.addEventListener('DOMContentLoaded', function () {
         llenarSelect(colorSelect, CATALOGO.coloresPorMarca, 'id_color', 'color', 'Selecciona color');
       }
     }
+
+    // El botón "+ Nuevo color" solo se muestra si: (a) el usuario es
+    // admin, y (b) ya hay una marca elegida (se necesita su id_marca
+    // para crear el color correctamente). No depende de si ya hay
+    // colores o no — un admin puede querer agregar más variaciones
+    // aunque ya existan otras.
+    if (btnNuevoColor) {
+      btnNuevoColor.style.display = (esAdmin && marcaSelect.value) ? 'inline-block' : 'none';
+    }
+
     generateCode();
     updatePreview();
   });
@@ -354,6 +372,64 @@ document.addEventListener('DOMContentLoaded', function () {
     generateCode();
     updatePreview();
   });
+
+  // ---------- Administración de catálogo: crear color nuevo ----------
+
+  // session.js dispara este evento cuando ya confirmó con el backend
+  // quién es el usuario logueado (ver GET /api/v1/auth/me). Aquí solo
+  // reaccionamos activando/desactivando esAdmin — el botón en sí se
+  // muestra/oculta en el listener de tamanoSelect de arriba, así que
+  // si el evento llega DESPUÉS de que el usuario ya eligió tamaño,
+  // volvemos a evaluar la visibilidad aquí también.
+  document.addEventListener('sesion-lista', function (evt) {
+    esAdmin = evt.detail && evt.detail.rol === 'admin';
+    if (btnNuevoColor) {
+      btnNuevoColor.style.display = (esAdmin && marcaSelect.value && tamanoSelect.value) ? 'inline-block' : 'none';
+    }
+  });
+
+  if (btnNuevoColor) {
+    btnNuevoColor.addEventListener('click', async function () {
+      const id_marca = marcaSelect.value;
+      if (!id_marca) {
+        showToast('Primero selecciona una marca');
+        return;
+      }
+
+      // prompt() es lo más simple posible para esta acción puntual de
+      // administrador — no justifica construir un modal completo para
+      // capturar un solo campo de texto. Si en el futuro se necesita
+      // capturar más datos al crear un color, ahí sí conviene un modal.
+      const nombreColor = prompt('Nombre del color nuevo (ej. "Verde militar"):');
+      if (!nombreColor || !nombreColor.trim()) return; // canceló o dejó vacío
+
+      btnNuevoColor.disabled = true;
+      btnNuevoColor.textContent = 'Guardando...';
+
+      try {
+        await fetchJSON(`${API_BASE}/color`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ id_marca, color: nombreColor.trim() })
+        });
+
+        // Refrescamos la lista de colores de esta marca para que el
+        // nuevo color aparezca de inmediato en el select, sin tener
+        // que recargar toda la página.
+        CATALOGO.coloresPorMarca = await fetchJSON(`${API_BASE}/color?id_marca=${id_marca}`);
+        llenarSelect(colorSelect, CATALOGO.coloresPorMarca, 'id_color', 'color', 'Selecciona color');
+        colorSelect.disabled = false;
+
+        showToast(`✓ Color "${nombreColor.trim()}" agregado`);
+      } catch (err) {
+        showToast(`✗ No se pudo crear el color: ${err.message}`, 5000);
+      } finally {
+        btnNuevoColor.disabled = false;
+        btnNuevoColor.textContent = '+ Nuevo color';
+      }
+    });
+  }
 
   if (colorDerivadoInput) {
     colorDerivadoInput.addEventListener('input', function () {

@@ -66,6 +66,25 @@
           <div id="derivado-wrapper" style="display:none; margin-top:8px;">
             <input type="text" id="color-derivado" name="colorDerivado" placeholder="Derivado (ej. verde lima)" disabled />
           </div>
+
+          <!--
+            Botón de administración de catálogo: SOLO visible cuando
+            form-globos.js confirma (vía el evento "sesion-lista" de
+            session.js) que el usuario logueado tiene rol "admin".
+            Empleados nunca lo ven, aunque el HTML técnicamente esté
+            en la página — la visibilidad es solo cosmética; la
+            protección real está en el backend (apiGuard bloquea el
+            POST /v1/color si el usuario no es admin, sin importar
+            si alguien intentara mostrar este botón manualmente).
+          -->
+          <button
+            type="button"
+            id="btn-nuevo-color"
+            class="btn-admin-inline"
+            style="display:none;"
+          >
+            + Nuevo color
+          </button>
         </div>
       </div>
 
