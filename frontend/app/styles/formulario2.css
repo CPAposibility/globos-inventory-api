@@ -311,6 +311,23 @@ input[type="text"]:read-only {
   white-space: nowrap;
 }
 
+/* Miniatura de la foto del producto dentro del panel de admin.
+   Suficientemente grande para reconocer la imagen de un vistazo,
+   pero sin ocupar demasiado espacio en la lista. */
+.admin-thumb-link {
+  flex-shrink: 0;
+  display: block;
+  line-height: 0;
+}
+
+.admin-thumb {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
 .btn-eliminar {
   flex-shrink: 0;
   background: var(--error);

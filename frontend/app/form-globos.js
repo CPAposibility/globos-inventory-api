@@ -627,7 +627,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const estilo = item.Estilo ? item.Estilo.estilo : `estilo#${item.id_estilo}`;
         const tamano = item.Tamano ? item.Tamano.tamano : `tamaño#${item.id_tamano}`;
         const color = item.Color ? item.Color.color : `color#${item.id_color}`;
-        const foto = item.foto_url ? ' 📷' : '';
+        const foto = ''; // ya no se usa aquí: la foto real se muestra como miniatura (ver render de la lista)
         return `${marca} ${estilo} ${tamano}" ${color}${foto} — ${item.codigo_interno || 'sin código'}`;
       }
     }
@@ -666,7 +666,20 @@ document.addEventListener('DOMContentLoaded', function () {
             ? `<button type="button" class="btn-eliminar btn-quitar-foto" data-id="${id}" style="background: var(--tertiary, #64748b);">Quitar foto</button>`
             : '';
 
+          // Miniatura real de la foto (no solo un ícono): así se
+          // confirma visualmente cuál imagen es antes de decidir
+          // quitarla — clave cuando hay varios productos con foto en
+          // la misma pantalla y no basta con un ícono genérico para
+          // saber cuál es cuál. Al hacer clic, abre la foto en tamaño
+          // completo en una pestaña nueva.
+          const miniatura = (recurso === 'globo' && item.foto_url)
+            ? `<a href="${item.foto_url}" target="_blank" rel="noopener" class="admin-thumb-link" title="Ver foto en tamaño completo">
+                 <img src="${item.foto_url}" alt="Foto del producto" class="admin-thumb" loading="lazy" />
+               </a>`
+            : '';
+
           fila.innerHTML = `
+            ${miniatura}
             <span>${config.texto(item)}</span>
             <div style="display:flex; gap:8px; flex-shrink:0;">
               ${botonQuitarFoto}
