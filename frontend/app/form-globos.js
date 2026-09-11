@@ -607,7 +607,14 @@ document.addEventListener('DOMContentLoaded', function () {
     marca: { idField: 'id_marca', texto: (item) => item.nombre },
     estilo: { idField: 'id_estilo', texto: (item) => item.estilo },
     tamano: { idField: 'id_tamano', texto: (item) => `${item.tamano}"` },
-    color: { idField: 'id_color', texto: (item) => item.color },
+    color: {
+      idField: 'id_color',
+      // GET /api/v1/color ya incluye la marca relacionada (ver
+      // color/controller.js → include: Marca). La mostramos porque
+      // el mismo nombre de color (ej. "Rojo") existe una vez por
+      // cada marca — sin esto sería imposible saber cuál es cuál.
+      texto: (item) => `${item.color} — ${item.Marca ? item.Marca.nombre : 'marca desconocida'}`
+    },
     ubicacion: { idField: 'id_ubicacion', texto: (item) => item.nombre },
     globo: {
       idField: 'id_globo',
@@ -650,17 +657,63 @@ document.addEventListener('DOMContentLoaded', function () {
           const id = item[config.idField];
           const fila = document.createElement('div');
           fila.className = 'admin-item';
+
+          // "Quitar foto" solo aplica al recurso "globo" y solo cuando
+          // ese producto en particular ya tiene una foto guardada —
+          // no tiene sentido mostrarlo en marca/estilo/color/etc, ni
+          // en un producto que todavía no tiene imagen.
+          const botonQuitarFoto = (recurso === 'globo' && item.foto_url)
+            ? `<button type="button" class="btn-eliminar btn-quitar-foto" data-id="${id}" style="background: var(--tertiary, #64748b);">Quitar foto</button>`
+            : '';
+
           fila.innerHTML = `
             <span>${config.texto(item)}</span>
-            <button type="button" class="btn-eliminar" data-id="${id}">Eliminar</button>
+            <div style="display:flex; gap:8px; flex-shrink:0;">
+              ${botonQuitarFoto}
+              <button type="button" class="btn-eliminar" data-id="${id}">Eliminar</button>
+            </div>
           `;
           adminLista.appendChild(fila);
         });
 
         // Un solo listener en el contenedor (en vez de uno por botón)
-        // captura el clic en cualquier "Eliminar" que se haya generado,
+        // captura el clic en cualquier botón que se haya generado,
         // incluso los que se crean después de este momento.
         adminLista.onclick = async function (evt) {
+          // "Quitar foto" se revisa primero porque también tiene la
+          // clase .btn-eliminar (para heredar el mismo estilo base) —
+          // si no se distinguiera aquí, caería en la rama de borrar
+          // el producto completo por error.
+          const botonQuitarFoto = evt.target.closest('.btn-quitar-foto');
+          if (botonQuitarFoto) {
+            const id = botonQuitarFoto.dataset.id;
+            const confirmado = confirm('¿Quitar la foto de este producto? El producto en sí NO se borra, solo la imagen.');
+            if (!confirmado) return;
+
+            botonQuitarFoto.disabled = true;
+            botonQuitarFoto.textContent = 'Quitando...';
+
+            try {
+              // Reutilizamos el PUT genérico que ya existe para globo
+              // (globo/controller.js → update hace item.update(req.body)
+              // con lo que sea que le mandemos) — no hace falta crear
+              // un endpoint nuevo solo para esto.
+              await fetchJSON(`${API_BASE}/globo/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ foto_url: null })
+              });
+              showToast('✓ Foto removida del producto');
+              botonQuitarFoto.remove(); // ya no aplica, este producto ya no tiene foto
+            } catch (err) {
+              showToast(`✗ No se pudo quitar la foto: ${err.message}`, 5000);
+              botonQuitarFoto.disabled = false;
+              botonQuitarFoto.textContent = 'Quitar foto';
+            }
+            return;
+          }
+
           const boton = evt.target.closest('.btn-eliminar');
           if (!boton) return;
 
