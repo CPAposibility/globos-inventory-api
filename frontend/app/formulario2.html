@@ -156,6 +156,38 @@
       </div>
     </form>
 
+    <!--
+      Panel de administración: SOLO visible si el usuario logueado
+      tiene rol "admin" (form-globos.js lo activa vía el evento
+      "sesion-lista" de session.js, igual que el botón "+ Nuevo color").
+      Permite borrar registros del catálogo o productos ya existentes.
+      El backend ya protegía estas rutas DELETE solo para admin desde
+      antes (ver api/v1/middlewares/apiGuard.js) — este panel es
+      la interfaz para usar esa capacidad sin tener que entrar a psql.
+    -->
+    <div id="admin-panel" class="admin-panel" style="display:none;">
+      <h2>Panel de administración</h2>
+      <p class="hint">Elimina registros del catálogo o productos. Esta acción no se puede deshacer.</p>
+
+      <div class="row">
+        <div class="field">
+          <label for="admin-recurso">¿Qué quieres administrar?</label>
+          <select id="admin-recurso">
+            <option value="marca">Marcas</option>
+            <option value="estilo">Estilos</option>
+            <option value="tamano">Tamaños</option>
+            <option value="color">Colores</option>
+            <option value="ubicacion">Ubicaciones</option>
+            <option value="globo">Productos (globo)</option>
+          </select>
+        </div>
+      </div>
+
+      <button type="button" id="btn-admin-cargar" class="btn-secondary">Cargar lista</button>
+
+      <div id="admin-lista" class="admin-lista"></div>
+    </div>
+
     <!-- Inputs de archivo (ocultos) -->
     <input type="file" name="foto_producto" id="foto_producto_input" accept="image/*" capture="environment" style="display:none">
     <input type="file" name="foto_archivo" id="foto_archivo_input" accept="image/*" style="display:none">

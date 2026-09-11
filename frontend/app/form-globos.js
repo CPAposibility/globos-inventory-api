@@ -591,4 +591,114 @@ document.addEventListener('DOMContentLoaded', function () {
       showToast('Nuevo producto listo');
     });
   }
+
+  // ---------- Panel de administración: eliminar registros ----------
+
+  const adminPanel = document.getElementById('admin-panel');
+  const adminRecursoSelect = document.getElementById('admin-recurso');
+  const btnAdminCargar = document.getElementById('btn-admin-cargar');
+  const adminLista = document.getElementById('admin-lista');
+
+  // Cada recurso tiene su propio nombre de columna "id" (id_marca,
+  // id_estilo, etc.) y su propia forma de armar un texto legible para
+  // mostrar en la lista — por eso este mapa en vez de asumir que
+  // todos se llaman igual.
+  const RECURSOS_ADMIN = {
+    marca: { idField: 'id_marca', texto: (item) => item.nombre },
+    estilo: { idField: 'id_estilo', texto: (item) => item.estilo },
+    tamano: { idField: 'id_tamano', texto: (item) => `${item.tamano}"` },
+    color: { idField: 'id_color', texto: (item) => item.color },
+    ubicacion: { idField: 'id_ubicacion', texto: (item) => item.nombre },
+    globo: {
+      idField: 'id_globo',
+      // Los globos vienen con sus catálogos relacionados incluidos
+      // (ver globo/controller.js → includeCatalogo), así que podemos
+      // armar un nombre legible tipo "Cielo Estándar 10 Verde" en vez
+      // de solo mostrar números de ids.
+      texto: (item) => {
+        const marca = item.Marca ? item.Marca.nombre : `marca#${item.id_marca}`;
+        const estilo = item.Estilo ? item.Estilo.estilo : `estilo#${item.id_estilo}`;
+        const tamano = item.Tamano ? item.Tamano.tamano : `tamaño#${item.id_tamano}`;
+        const color = item.Color ? item.Color.color : `color#${item.id_color}`;
+        const foto = item.foto_url ? ' 📷' : '';
+        return `${marca} ${estilo} ${tamano}" ${color}${foto} — ${item.codigo_interno || 'sin código'}`;
+      }
+    }
+  };
+
+  if (btnAdminCargar) {
+    btnAdminCargar.addEventListener('click', async function () {
+      const recurso = adminRecursoSelect.value;
+      const config = RECURSOS_ADMIN[recurso];
+
+      adminLista.innerHTML = '<p class="hint">Cargando...</p>';
+
+      try {
+        const items = await fetchJSON(`${API_BASE}/${recurso}`);
+
+        if (items.length === 0) {
+          adminLista.innerHTML = '<p class="hint">No hay registros.</p>';
+          return;
+        }
+
+        // Reconstruimos la lista completa cada vez que se carga o se
+        // borra algo — es más simple que ir manipulando el DOM elemento
+        // por elemento, y aquí el volumen de datos es pequeño (decenas
+        // de registros, no miles), así que no hay problema de rendimiento.
+        adminLista.innerHTML = '';
+        items.forEach((item) => {
+          const id = item[config.idField];
+          const fila = document.createElement('div');
+          fila.className = 'admin-item';
+          fila.innerHTML = `
+            <span>${config.texto(item)}</span>
+            <button type="button" class="btn-eliminar" data-id="${id}">Eliminar</button>
+          `;
+          adminLista.appendChild(fila);
+        });
+
+        // Un solo listener en el contenedor (en vez de uno por botón)
+        // captura el clic en cualquier "Eliminar" que se haya generado,
+        // incluso los que se crean después de este momento.
+        adminLista.onclick = async function (evt) {
+          const boton = evt.target.closest('.btn-eliminar');
+          if (!boton) return;
+
+          const id = boton.dataset.id;
+          const confirmado = confirm('¿Seguro que quieres eliminar este registro? Esta acción no se puede deshacer.');
+          if (!confirmado) return;
+
+          boton.disabled = true;
+          boton.textContent = 'Eliminando...';
+
+          try {
+            await fetchJSON(`${API_BASE}/${recurso}/${id}`, {
+              method: 'DELETE',
+              credentials: 'include'
+            });
+            boton.closest('.admin-item').remove();
+            showToast('✓ Registro eliminado');
+          } catch (err) {
+            // Errores comunes aquí: el registro tiene otros registros
+            // que dependen de él (ej. borrar una marca que todavía
+            // tiene productos) — el backend regresa un mensaje
+            // describiendo el problema, se lo mostramos tal cual.
+            showToast(`✗ No se pudo eliminar: ${err.message}`, 5000);
+            boton.disabled = false;
+            boton.textContent = 'Eliminar';
+          }
+        };
+      } catch (err) {
+        adminLista.innerHTML = `<p class="hint">Error al cargar: ${err.message}</p>`;
+      }
+    });
+  }
+
+  // El panel completo de administración solo se muestra si el usuario
+  // logueado es admin — mismo patrón que el botón "+ Nuevo color".
+  document.addEventListener('sesion-lista', function (evt) {
+    if (adminPanel && evt.detail && evt.detail.rol === 'admin') {
+      adminPanel.style.display = 'block';
+    }
+  });
 });

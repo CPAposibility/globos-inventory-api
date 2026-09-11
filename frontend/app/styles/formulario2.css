@@ -268,6 +268,72 @@ input[type="text"]:read-only {
   background: var(--primary-light);
 }
 
+/* Panel de administración (borrar registros de catálogo/productos).
+   Reutiliza el mismo look que .preview para sentirse parte de la
+   misma familia visual del formulario. */
+.admin-panel {
+  margin-top: 32px;
+  padding: 16px;
+  border-radius: 10px;
+  background: var(--disabled-bg);
+  border: 1px solid var(--error);
+}
+
+.admin-panel h2 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.admin-lista {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.admin-item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.btn-eliminar {
+  flex-shrink: 0;
+  background: var(--error);
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.btn-eliminar:hover {
+  opacity: 0.85;
+}
+
+.btn-eliminar:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Caja de "Previsualización" al final del formulario, donde se
    muestra el resumen en vivo (marca, color, cantidad de cajas
    convertida a bolsas, etc.) mientras el usuario va llenando */
