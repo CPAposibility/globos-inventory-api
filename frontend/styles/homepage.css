@@ -1,193 +1,747 @@
-/* ===========================================================
-   Variables globales — mismos valores que styles/formulario2.css
-   para que la landing y la herramienta interna se sientan como
-   una sola aplicación, no dos sitios distintos.
-   =========================================================== */
+/*
+  Este archivo define la identidad visual de la landing.
+  Sus funciones principales son:
+  - dar estilo a la estructura HTML
+  - crear un fondo alegre con referencia a globos
+  - destacar la compra y la conversión de clientes
+  - mantener la apariencia clara y comercial en móvil y desktop
+*/
+
 :root {
-  --bg-overlay: rgba(17, 24, 39, 0.55); /* usa --text (#111827) del formulario como base del overlay, en vez de negro puro */
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
-  --secondary: #1e40af;      /* azul más oscuro, mismo family que --primary */
-  --secondary-hover: #1e3a8a;
-  --tertiary: #64748b;       /* gris-azulado: diferencia visualmente la acción sensible (empleados) sin salirse de la paleta */
-  --tertiary-hover: #475569;
-  --text: #ffffff;
-  --shadow: rgba(0, 0, 0, 0.18);
+  --page-bg: #fffaf7;
+  --panel: #ffffff;
+  --panel-soft: #fff1df;
+  --panel-dark: #1f2937;
+  --primary: #ff5a7a;
+  --primary-hover: #e73b66;
+  --secondary: #ffffff;
+  --secondary-hover: #f3f4f6;
+  --accent: #ffb703;
+  --accent-soft: #fff5d6;
+  --text: #1f2937;
+  --text-soft: #5b6474;
+  --line: rgba(148, 163, 184, 0.26);
+  --shadow: rgba(31, 41, 55, 0.12);
+  --balloon-pink: rgba(255, 87, 134, 0.8);
+  --balloon-gold: rgba(255, 191, 0, 0.8);
+  --balloon-blue: rgba(59, 130, 246, 0.8);
+  --balloon-purple: rgba(168, 85, 247, 0.8);
 }
 
-html, body {
-  margin: 0;
-  width: 100%;
-  min-height: 100%;
-}
-
-body {
-  min-height: 100vh;
-  min-height: 100svh; /* svh = "small viewport height", evita que la barra de Safari en iOS tape contenido */
-
-  /* Fuente nativa del sistema — la misma familia que usa formulario2.css,
-     así toda la app (landing + herramienta interna) se ve consistente
-     y no depende de descargar una fuente externa (Poppins nunca se
-     estaba cargando realmente, por eso se quitó). */
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-
-  /* NOTA: esta ruta asume que:
-       - este archivo (homepage.css) vive en frontend/styles/
-       - la carpeta de imágenes vive en frontend/ilustraciones/
-     por eso el "../" para subir un nivel desde styles/ antes de
-     entrar a ilustraciones/. Si mueves alguna de las dos carpetas,
-     hay que ajustar esta ruta también. */
-  background-image: linear-gradient(var(--bg-overlay), var(--bg-overlay)),
-      url('../ilustraciones/fondo_landing.png');
-  background-size: cover;
-  background-position: center center;
-  background-repeat: no-repeat;
-  color: var(--text);
-  -webkit-tap-highlight-color: transparent;
-}
-
-.overlay {
-  width: 100%;
-  min-height: 100vh;
-  min-height: 100svh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  padding: 20px;
+* {
   box-sizing: border-box;
 }
 
-.content {
-  max-width: 760px;
-  padding: 20px;
+html {
+  scroll-behavior: smooth;
 }
 
-.title {
-  font-size: clamp(2.3rem, 6vw, 4.2rem);
+body {
+  position: relative;
+  margin: 0;
+  min-height: 100vh;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(255, 90, 122, 0.16), transparent 22%),
+    radial-gradient(circle at bottom right, rgba(59, 130, 246, 0.14), transparent 20%),
+    linear-gradient(180deg, #fffdfb 0%, var(--page-bg) 100%);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+button,
+a {
+  font: inherit;
+}
+
+/*
+  Los globos son decorativos. No tienen lógica funcional,
+  pero aportan ambiente festivo y refuerzan la categoría de globos.
+*/
+.balloon {
+  position: absolute;
+  width: 72px;
+  height: 90px;
+  border-radius: 50% 50% 48% 48%;
+  opacity: 0.9;
+  box-shadow: inset -8px -10px 18px rgba(255, 255, 255, 0.2), 0 18px 25px rgba(31, 41, 55, 0.08);
+}
+
+.balloon::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -32px;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 32px;
+  background: rgba(31, 41, 55, 0.25);
+}
+
+.balloon::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -16px;
+  transform: translateX(-50%);
+  width: 8px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.14);
+}
+
+.balloons {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.balloons-left .balloon,
+.balloons-right .balloon {
+  position: absolute;
+}
+
+.balloons-left .balloon:nth-child(1) { left: 4%; top: 8%; background: var(--balloon-pink); }
+.balloons-left .balloon:nth-child(2) { left: 10%; top: 24%; background: var(--balloon-gold); }
+.balloons-left .balloon:nth-child(3) { left: 18%; top: 56%; background: var(--balloon-blue); }
+.balloons-left .balloon:nth-child(4) { left: 7%; top: 72%; background: var(--balloon-purple); }
+
+.balloons-right .balloon:nth-child(1) { right: 6%; top: 10%; background: var(--balloon-blue); }
+.balloons-right .balloon:nth-child(2) { right: 12%; top: 28%; background: var(--balloon-pink); }
+.balloons-right .balloon:nth-child(3) { right: 18%; top: 58%; background: var(--balloon-gold); }
+.balloons-right .balloon:nth-child(4) { right: 10%; top: 74%; background: var(--balloon-purple); }
+
+.page-shell {
+  position: relative;
+  z-index: 1;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 24px 20px 60px;
+}
+
+/*
+  La barra superior crea una estructura más realista de sitio web.
+  Aquí se ordena la marca, menú y botón principal para cotizar.
+*/
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  backdrop-filter: blur(14px);
+  border-radius: 20px;
+  padding: 16px 20px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-weight: 800;
-  margin: 0 0 10px;
-  line-height: 1.1;
-  letter-spacing: -0.04em;
+  color: var(--panel-dark);
 }
 
-.subtitle {
-  font-size: clamp(1.1rem, 2.8vw, 1.5rem);
+.brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--primary), #7c3aed);
+  color: white;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+}
+
+.brand-text {
+  font-size: 1.04rem;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.nav a {
+  color: var(--text-soft);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.nav-cta,
+.btn,
+.card-btn,
+.chip,
+.contact-card,
+.socials a {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-cta,
+.btn,
+.card-btn,
+.chip {
+  cursor: pointer;
+  border: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.nav-cta,
+.card-btn {
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-weight: 700;
+}
+
+.nav-cta {
+  background: var(--panel-dark);
+  color: white;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.12);
+  text-decoration: none;
+}
+
+/*
+  Hero: es la sección principal de conversión.
+  Aquí se presenta la propuesta de valor y se empuja la acción principal.
+*/
+.hero {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 30px;
+  align-items: center;
+  padding: 42px 0 30px;
+}
+
+.hero-copy {
+  padding: 18px 0;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: var(--panel-soft);
+  border: 1px solid rgba(255, 90, 122, 0.12);
+  color: var(--primary);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.hero-copy h1 {
+  margin: 18px 0 14px;
+  max-width: 620px;
+  font-size: clamp(2.5rem, 4vw, 4.3rem);
+  line-height: 1.04;
+  letter-spacing: -0.06em;
+  color: var(--panel-dark);
+}
+
+.hero-copy p {
+  max-width: 560px;
   margin: 0 0 28px;
-  line-height: 1.5;
-  opacity: 0.98;
+  font-size: 1.1rem;
+  line-height: 1.7;
+  color: var(--text-soft);
 }
 
 .cta-group {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
   gap: 14px;
-  margin-top: 10px;
+  margin-bottom: 18px;
 }
 
 .btn {
-  position: relative;
-  border: none;
-  /* border-radius de 12px, igual al resto de la app (formulario2.css
-     usa 8-12px en inputs/tarjetas) en vez de 14px, para que los botones
-     no se sientan "de otro sitio" */
-  border-radius: 12px;
-  color: var(--text);
+  border-radius: 14px;
+  padding: 16px 22px;
+  min-height: 54px;
+  font-weight: 800;
   font-size: 0.96rem;
-  font-weight: 700;
-  cursor: pointer;
-  padding: 15px 22px;
-  min-height: 52px; /* bien por encima del mínimo táctil de 44px recomendado por iOS */
-  box-shadow: 0 10px 24px var(--shadow);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
-  text-align: center;
-  -webkit-appearance: none;
-  appearance: none;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  text-decoration: none;
 }
 
-.btn:hover {
-  transform: translateY(-2px) scale(1.01);
-  box-shadow: 0 16px 28px rgba(0, 0, 0, 0.22);
-  filter: brightness(1.05);
-}
-
-.btn:active {
-  transform: translateY(0) scale(0.99);
+.btn:hover,
+.nav-cta:hover,
+.card-btn:hover,
+.chip:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.02);
 }
 
 .btn-primary {
   background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+  color: white;
 }
 
 .btn-secondary {
   background: linear-gradient(135deg, var(--secondary), var(--secondary-hover));
+  color: var(--panel-dark);
 }
 
-.btn-tertiary {
-  background: linear-gradient(135deg, var(--tertiary), var(--tertiary-hover));
+.trust-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
 }
 
-/* Botones deshabilitados (para las secciones que aún no existen,
-   ej. Catálogo / Empleados, mientras se construyen) */
-.btn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-  transform: none;
-  filter: grayscale(0.3);
+.trust-row span {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: white;
+  border: 1px solid var(--line);
+  color: var(--text-soft);
+  font-size: 0.82rem;
+  font-weight: 700;
 }
 
-.btn:disabled:hover {
-  transform: none;
-  box-shadow: 0 10px 24px var(--shadow);
+.hero-visual {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 440px;
+}
+
+.product-card {
+  position: relative;
+  width: min(100%, 380px);
+  padding: 22px 20px 18px;
+  border-radius: 26px;
+  background: linear-gradient(180deg, rgba(31, 41, 55, 0.97), rgba(17, 24, 39, 0.98));
+  color: white;
+  box-shadow: 0 26px 50px rgba(15, 23, 42, 0.18);
+  overflow: hidden;
+}
+
+.product-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 90, 122, 0.18), rgba(255, 191, 3, 0.12), rgba(59, 130, 246, 0.12));
+}
+
+.card-top,
+.product-card h2,
+.mini-grid,
+.card-btn {
+  position: relative;
+  z-index: 1;
+}
+
+.card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.mini-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.mini-price {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #fbbf24;
+}
+
+.product-card h2 {
+  margin: 0 0 18px;
+  font-size: clamp(1.9rem, 2.5vw, 2.5rem);
+  letter-spacing: -0.04em;
+}
+
+.mini-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.mini-grid div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 12px 10px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mini-grid span {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.76rem;
+}
+
+.mini-grid strong {
+  font-size: 1.02rem;
+}
+
+.card-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  background: linear-gradient(135deg, var(--accent), #f97316);
+  color: white;
+  box-shadow: 0 12px 24px rgba(249, 115, 22, 0.25);
+}
+
+.floating-badge {
+  position: absolute;
+  right: -4px;
+  bottom: 34px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: white;
+  color: var(--panel-dark);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow: 0 18px 28px rgba(15, 23, 42, 0.12);
+  font-weight: 800;
+  font-size: 0.8rem;
+}
+
+/*
+  Categorías y métricas: ayudan a navegar y a reforzar la confianza.
+*/
+.categories,
+.stats {
+  margin-top: 14px;
+}
+
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.section-head h3 {
+  margin: 0;
+  font-size: 1.35rem;
+  letter-spacing: -0.03em;
+  color: var(--panel-dark);
+}
+
+.section-head a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.category-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.chip {
+  background: white;
+  color: var(--panel-dark);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 12px 18px;
+  font-weight: 700;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
+  text-decoration: none;
+}
+
+/*
+  Beneficios: esta sección ayuda a cerrar la venta mostrando valor real.
+  Se usan tarjetas pequeñas para comunicar rapidez, estilo y atención.
+*/
+.benefits {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 26px;
+}
+
+.benefit-card {
+  padding: 22px 20px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid var(--line);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.03);
+}
+
+.benefit-number {
+  display: inline-flex;
+  margin-bottom: 10px;
+  color: var(--primary);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.benefit-card h4 {
+  margin: 0 0 10px;
+  font-size: 1.1rem;
+  color: var(--panel-dark);
+}
+
+.benefit-card p {
+  margin: 0;
+  line-height: 1.7;
+  color: var(--text-soft);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.stat-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 22px 20px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--line);
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.04);
+}
+
+.stat-box strong {
+  font-size: clamp(1.8rem, 2.4vw, 2.6rem);
+  letter-spacing: -0.04em;
+  color: var(--panel-dark);
+}
+
+.stat-box span {
+  color: var(--text-soft);
+  font-weight: 600;
+}
+
+/*
+  Contacto: esta sección transforma una visita en una conversación real.
+  Es clave para ventas de pedidos personalizados.
+*/
+.contact-section {
+  margin-top: 34px;
+  padding: 26px 22px 12px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.04);
+}
+
+.contact-header {
+  margin-bottom: 20px;
+}
+
+.contact-header h3 {
+  margin: 14px 0 0;
+  font-size: clamp(1.6rem, 2vw, 2.2rem);
+  letter-spacing: -0.04em;
+  color: var(--panel-dark);
+}
+
+.eyebrow-dark {
+  background: rgba(255, 90, 122, 0.08);
+  color: var(--primary);
+}
+
+.contact-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.contact-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 18px;
+  border-radius: 18px;
+  text-decoration: none;
+  color: var(--panel-dark);
+  border: 1px solid var(--line);
+  background: white;
+  box-shadow: 0 10px 20px rgba(31, 41, 55, 0.04);
+}
+
+.contact-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  font-weight: 800;
+  font-size: 1.2rem;
+  color: white;
+}
+
+.whatsapp .contact-icon {
+  background: linear-gradient(135deg, #25d366, #128c7e);
+}
+
+.email .contact-icon {
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+}
+
+.contact-card strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 1rem;
+}
+
+.contact-card span {
+  color: var(--text-soft);
+  font-size: 0.92rem;
+}
+
+.socials {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 22px;
+  padding-bottom: 8px;
+}
+
+.socials a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  text-decoration: none;
+  background: var(--panel-dark);
+  color: white;
+  font-weight: 800;
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.12);
+}
+
+@media (max-width: 900px) {
+  .hero {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-copy {
+    text-align: center;
+  }
+
+  .hero-copy h1,
+  .hero-copy p {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .cta-group {
+    justify-content: center;
+  }
+
+  .hero-visual {
+    min-height: 360px;
+  }
 }
 
 @media (max-width: 640px) {
-  .overlay {
-    padding: 24px 16px;
+  .page-shell {
+    padding-left: 14px;
+    padding-right: 14px;
   }
 
-  .content {
-    max-width: 90vw;
-    padding: 0;
+  .topbar {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .nav {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 12px 18px;
+  }
+
+  .nav-cta {
+    width: 100%;
+  }
+
+  .hero {
+    padding-top: 26px;
+  }
+
+  .hero-copy h1 {
+    font-size: clamp(2.2rem, 11vw, 3rem);
+  }
+
+  .hero-copy p {
+    font-size: 1rem;
   }
 
   .cta-group {
     flex-direction: column;
-    gap: 12px;
-    width: 100%;
   }
 
   .btn {
     width: 100%;
-    min-height: 50px;
-    font-size: 0.92rem;
-    padding: 14px 16px;
+  }
+
+  .stats,
+  .contact-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .benefits {
+    grid-template-columns: 1fr;
   }
 }
 
-/* Respeta el notch / Dynamic Island y la barra inferior en iPhones */
-@supports (padding: max(0px)) {
-  .overlay {
-    padding-left: max(16px, env(safe-area-inset-left));
-    padding-right: max(16px, env(safe-area-inset-right));
-    padding-top: max(20px, env(safe-area-inset-top));
-    padding-bottom: max(20px, env(safe-area-inset-bottom));
-  }
+/*
+  Acceso del equipo interno (footer): a propósito muy discreto,
+  ya que esta página es para clientes — el personal ya sabe que
+  existe este enlace, no necesita ser vistoso ni competir visualmente
+  con las llamadas a la acción de venta (Cotizar, Ver Catálogo, etc).
+*/
+.staff-access {
+  text-align: center;
+  margin-top: 40px;
+  padding-top: 16px;
+  padding-bottom: 8px;
 }
 
-/* Soporte de teclado / accesibilidad, igual que formulario2.css */
-.btn:focus-visible {
-  outline: 2px solid #ffffff;
-  outline-offset: 2px;
+.staff-access a {
+  color: var(--text-soft);
+  text-decoration: none;
+  font-size: 0.78rem;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
+.staff-access a:hover {
+  opacity: 1;
+  text-decoration: underline;
 }
+

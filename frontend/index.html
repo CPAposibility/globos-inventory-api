@@ -2,48 +2,237 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <!-- viewport-fit=cover + las meta de Apple de abajo son las mismas
-       que ya usa formulario2.html, para que ambas páginas se comporten
-       igual como "app" en iOS (pantalla completa, sin zoom accidental) -->
+  <!--
+    Configuración general de la página:
+    - Define el idioma del sitio en español.
+    - Ajusta el ancho responsive para móvil.
+    - Mantiene la experiencia visual como app en iPhone.
+  -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="El Guateque" />
-  <meta name="description" content="Herramienta interna de El Guateque para gestión de mercancía de globos" />
-  <meta name="theme-color" content="#2563eb" />
+  <meta name="description" content="Landing comercial de globos para fiestas y eventos." />
+  <meta name="theme-color" content="#ff5a7a" />
   <title>El Guateque - El plus de tu fiesta</title>
   <link rel="stylesheet" href="styles/homepage.css" />
 </head>
 <body>
-  <div class="overlay">
-    <div class="content">
-      <h1 class="title">El Guateque</h1>
-      <p class="subtitle">El plus de tu fiesta</p>
+  <!--
+    Estos elementos decorativos no tienen contenido funcional.
+    Solo simulan globos flotantes para dar un ambiente alegre
+    y reforzar la identidad del negocio de decoración.
+  -->
+  <div class="balloons balloons-left" aria-hidden="true">
+    <span class="balloon"></span>
+    <span class="balloon"></span>
+    <span class="balloon"></span>
+    <span class="balloon"></span>
+  </div>
+  <div class="balloons balloons-right" aria-hidden="true">
+    <span class="balloon"></span>
+    <span class="balloon"></span>
+    <span class="balloon"></span>
+    <span class="balloon"></span>
+  </div>
 
-      <div class="cta-group">
-        <!-- TODO: aún no existe una página de catálogo — se deja
-             deshabilitado hasta que se construya esa vista -->
-        <button class="btn btn-primary" disabled title="Próximamente">
-          Ver Catálogo
-        </button>
-
-        <!-- Ya existe y funciona: lleva al formulario de registro
-             de entradas/salidas que ya está en producción -->
-        <button
-          class="btn btn-secondary"
-          onclick="window.location.href = 'formulario2.html';"
-        >
-          Entrada/Salida de Mercancía
-        </button>
-
-        <!-- TODO: aún no existe la vista de gestión de empleados —
-             deshabilitado hasta que se construya -->
-        <button class="btn btn-tertiary" disabled title="Próximamente">
-          Agregar/Remover Empleados
-        </button>
+  <div class="page-shell">
+    <!--
+      Header: funciona como barra de navegación principal.
+      Tiene marca, menú y CTA para cotizar.
+      Su propósito es guiar al visitante hacia la compra o consulta.
+    -->
+    <header class="topbar">
+      <div class="brand" aria-label="El Guateque home">
+        <span class="brand-mark">EG</span>
+        <span class="brand-text">El Guateque</span>
       </div>
-    </div>
+
+      <!--
+        FIX: los href de abajo usaban "#catálogo" (con tilde) pero la
+        sección real tiene id="catalogo" (sin tilde) — nunca iban a
+        coincidir. Se corrigió para que el menú sí desplace a cada
+        sección correctamente.
+      -->
+      <nav class="nav" aria-label="Navegación principal">
+        <a href="#catalogo">Catálogo</a>
+        <a href="#tematicas">Temáticas</a>
+        <a href="#promociones">Promociones</a>
+        <a href="#contacto">Contacto</a>
+      </nav>
+
+      <a class="nav-cta" href="https://wa.me/5215500000000?text=Hola%20me%20gustar%C3%ADa%20cotizar%20un%20pedido" target="_blank" rel="noreferrer">Cotizar</a>
+    </header>
+
+    <!--
+      Hero principal: es la parte más importante de la landing.
+      Aquí se comunica el valor del negocio y se fuerza la acción principal:
+      Ver Catálogo o Cotizar Pedido.
+    -->
+    <main class="hero">
+      <div class="hero-copy">
+        <span class="eyebrow">Globos para fiestas y eventos</span>
+        <h1>Globos que hacen destacar cada celebración.</h1>
+        <p>
+          Encuentra arreglos, temáticas y paquetes para decorar fiestas, eventos y
+          momentos especiales con estilo, color y calidad premium.
+        </p>
+
+        <div class="cta-group">
+          <a class="btn btn-primary" href="#catalogo">Ver Catálogo</a>
+          <a class="btn btn-secondary" href="https://wa.me/5215500000000?text=Hola%20quisiera%20cotizar%20mi%20pedido" target="_blank" rel="noreferrer">Cotizar Pedido</a>
+        </div>
+
+        <div class="trust-row" aria-label="Indicadores de confianza">
+          <span>+1,200 pedidos</span>
+          <span>Envíos rápidos</span>
+          <span>4.9 de calificación</span>
+        </div>
+      </div>
+
+      <!--
+        Tarjeta destacada del producto top venta.
+        Funciona como una mini promoción para mostrar un producto muy visible
+        y reforzar el impulso de compra.
+      -->
+      <div class="hero-visual" aria-label="Producto destacado">
+        <div class="product-card">
+          <div class="card-top">
+            <span class="mini-badge">Top venta</span>
+            <span class="mini-price">$890</span>
+          </div>
+
+          <h2>Neon Party</h2>
+
+          <div class="mini-grid">
+            <div>
+              <span>Incluye</span>
+              <strong>24 globos</strong>
+            </div>
+            <div>
+              <span>Estilo</span>
+              <strong>Moderno</strong>
+            </div>
+          </div>
+
+          <a class="card-btn" href="#contacto">Ver paquete</a>
+        </div>
+
+        <div class="floating-badge">Entrega rápida</div>
+      </div>
+    </main>
+
+    <!--
+      Sección de categorías: ayuda al cliente a navegar por tipos de productos
+      y guía la compra según el evento o estilo deseado.
+    -->
+    <section class="categories" id="catalogo">
+      <div class="section-head">
+        <h3>Explora por categoría</h3>
+        <a href="#">Ver todo</a>
+      </div>
+
+      <div class="category-row" aria-label="Categorías de productos">
+        <a class="chip" href="#contacto">Temática</a>
+        <a class="chip" href="#contacto">Clásicos</a>
+        <a class="chip" href="#contacto">Batucadas</a>
+        <a class="chip" href="#contacto">Con Luz</a>
+        <a class="chip" href="#contacto">Temporada</a>
+      </div>
+    </section>
+
+    <!--
+      Sección de beneficios: refuerza la propuesta de valor y ayuda a convertir.
+      Esta parte comunica por qué comprar con nosotros y qué esperar del servicio.
+    -->
+    <section class="benefits" aria-label="Beneficios de compra">
+      <div class="benefit-card">
+        <span class="benefit-number">01</span>
+        <h4>Diseños personalizados</h4>
+        <p>Adaptamos cada estilo a tu evento, marca o temática para que la decoración sea única.</p>
+      </div>
+
+      <div class="benefit-card">
+        <span class="benefit-number">02</span>
+        <h4>Entrega rápida</h4>
+        <p>Trabajamos con tiempos ágiles para que tu pedido llegue listo antes de la fecha clave.</p>
+      </div>
+
+      <div class="benefit-card">
+        <span class="benefit-number">03</span>
+        <h4>Atención directa</h4>
+        <p>Consultas rápidas, cotizaciones claras y apoyo de compra para negocios y clientes finales.</p>
+      </div>
+    </section>
+
+    <!--
+      Estadísticas del negocio: ayudan a generar confianza.
+      Estas métricas simulan la reputación y actividad comercial real.
+    -->
+    <section class="stats" aria-label="Estadísticas del negocio">
+      <div class="stat-box">
+        <strong>1200+</strong>
+        <span>Eventos decorados</span>
+      </div>
+      <div class="stat-box">
+        <strong>48h</strong>
+        <span>Entrega promedio</span>
+      </div>
+      <div class="stat-box">
+        <strong>98%</strong>
+        <span>Clientes satisfechos</span>
+      </div>
+    </section>
+
+    <!--
+      Sección de contacto:
+      sirve para convertir visitas en conversaciones reales.
+      Aquí se incluyen medios de contacto directos para WhatsApp y correo,
+      además de redes sociales para fortalecer la marca.
+    -->
+    <section class="contact-section" id="contacto">
+      <div class="contact-header">
+        <span class="eyebrow eyebrow-dark">Contáctanos</span>
+        <h3>Estamos para ayudarte a crear la fiesta perfecta.</h3>
+      </div>
+
+      <div class="contact-grid">
+        <a class="contact-card whatsapp" href="https://wa.me/5215500000000?text=Hola%20me%20gustar%C3%ADa%20cotizar%20un%20pedido" target="_blank" rel="noreferrer">
+          <div class="contact-icon">W</div>
+          <div>
+            <strong>WhatsApp</strong>
+            <span>+52 1 55 0000 0000</span>
+          </div>
+        </a>
+
+        <a class="contact-card email" href="mailto:ventas@elguateque.com.mx">
+          <div class="contact-icon">@</div>
+          <div>
+            <strong>Correo</strong>
+            <span>ventas@elguateque.com.mx</span>
+          </div>
+        </a>
+      </div>
+
+      <div class="socials" aria-label="Redes sociales">
+        <a href="https://instagram.com" aria-label="Instagram" title="Instagram" target="_blank" rel="noreferrer">◎</a>
+        <a href="https://facebook.com" aria-label="Facebook" title="Facebook" target="_blank" rel="noreferrer">f</a>
+        <a href="https://tiktok.com" aria-label="TikTok" title="TikTok" target="_blank" rel="noreferrer">♪</a>
+      </div>
+    </section>
+
+    <!--
+      Acceso del equipo interno: un enlace discreto (no es un botón
+      llamativo como el resto de la página, a propósito, porque esta
+      landing ahora es 100% para clientes) que lleva a /login.html.
+      Si alguien del equipo ya tiene sesión iniciada, el propio backend
+      (requireAppSession) los deja pasar directo al formulario; si no,
+      login.html los recibe primero.
+    -->
+    <footer class="staff-access">
+      <a href="/login.html">Acceso personal</a>
+    </footer>
   </div>
 </body>
 </html>
