@@ -785,6 +785,35 @@ a {
   aspect-ratio: 1 / 1;
   background: var(--panel-soft);
   overflow: hidden;
+  position: relative;
+}
+
+/* Producto sin stock en ninguna ubicación: se atenúa visualmente
+   pero sigue apareciendo en el catálogo (decisión de negocio: no se
+   oculta, solo se marca). El botón "Cotizar" se deja funcional por si
+   el cliente igual quiere preguntar o apartar para cuando reingrese. */
+.product-tile-agotado .product-tile-image img,
+.product-tile-agotado .product-tile-placeholder {
+  filter: grayscale(0.85);
+  opacity: 0.55;
+}
+
+.product-tile-agotado .product-tile-name {
+  color: var(--text-soft);
+}
+
+.product-tile-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: rgba(31, 41, 55, 0.85);
+  color: white;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 4px 9px;
+  border-radius: 999px;
 }
 
 .product-tile-image img {
