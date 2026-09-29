@@ -140,6 +140,18 @@
         <a class="chip" href="#contacto">Con Luz</a>
         <a class="chip" href="#contacto">Temporada</a>
       </div>
+
+      <!--
+        Grilla de productos reales, llenada por catalogo.js desde
+        GET /api/v1/globo (endpoint público, no requiere login).
+        Los chips de arriba son decorativos por ahora (Cesar planea
+        usar Temática/Clásicos/Batucadas como categorías reales más
+        adelante) — por ahora esta grilla muestra TODOS los productos
+        sin filtrar por categoría.
+      -->
+      <div class="product-grid" id="product-grid" aria-label="Catálogo de productos">
+        <p class="product-grid-loading">Cargando catálogo...</p>
+      </div>
     </section>
 
     <!--
@@ -234,5 +246,7 @@
       <a href="/login.html">Acceso personal</a>
     </footer>
   </div>
+
+  <script src="catalogo.js"></script>
 </body>
 </html>
