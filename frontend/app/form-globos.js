@@ -10,17 +10,17 @@
 function normalizarTexto(texto) {
   if (!texto) return "";
   return texto
-    .toString()
-    .trim()
-    .toUpperCase()
-    .replace(/\s+/g, "-")
-    .replace(/Á/g, "A")
-    .replace(/É/g, "E")
-    .replace(/Í/g, "I")
-    .replace(/Ó/g, "O")
-    .replace(/Ú/g, "U")
-    .replace(/Ñ/g, "N")
-    .replace(/[^A-Z0-9\-]/g, "");
+  .toString()
+  .trim()
+  .toUpperCase()
+  .replace(/\s+/g, "-")
+  .replace(/Á/g, "A")
+  .replace(/É/g, "E")
+  .replace(/Í/g, "I")
+  .replace(/Ó/g, "O")
+  .replace(/Ú/g, "U")
+  .replace(/Ñ/g, "N")
+  .replace(/[^A-Z0-9\-]/g, "");
 }
 
 async function fetchJSON(url, options) {
@@ -108,17 +108,17 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-        .then(s => {
-          stream = s;
-          video.srcObject = s;
-          video.play().catch(() => {});
-          overlay.classList.add('visible');
-          overlay.setAttribute('aria-hidden', 'false');
-        })
-        .catch(() => {
-          showToast('Abriendo galería...');
-          fileInput.click();
-        });
+      .then(s => {
+        stream = s;
+        video.srcObject = s;
+        video.play().catch(() => {});
+        overlay.classList.add('visible');
+        overlay.setAttribute('aria-hidden', 'false');
+      })
+      .catch(() => {
+        showToast('Abriendo galería...');
+        fileInput.click();
+      });
     } else {
       fileInput.click();
     }
@@ -131,6 +131,83 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   btnArchivo && btnArchivo.addEventListener('click', openFileSelector);
 
+  // ---------- Compresión de fotos antes de subirlas ----------
+
+  // Las fotos de cámaras de celular modernas pueden pesar 10-15 MB sin
+  // comprimir — eso hace lenta la subida y el catálogo público que
+  // luego las muestra. Redimensionamos al lado más largo máximo y
+  // recomprimimos a JPEG con calidad razonable antes de guardarlas en
+  // fotoSeleccionada. 1600px es de sobra para verse nítido en
+  // cualquier pantalla (celular o monitor), y normalmente deja el
+  // archivo en un rango de cientos de KB en vez de varios MB.
+  const FOTO_MAX_DIMENSION = 1600;
+  const FOTO_CALIDAD = 0.82;
+
+  function comprimirImagen(archivoOriginal) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(archivoOriginal);
+
+      img.onload = () => {
+        URL.revokeObjectURL(url); // libera la memoria del blob temporal
+
+        let { width, height } = img;
+        if (width > FOTO_MAX_DIMENSION || height > FOTO_MAX_DIMENSION) {
+          if (width > height) {
+            height = Math.round(height * (FOTO_MAX_DIMENSION / width));
+            width = FOTO_MAX_DIMENSION;
+          } else {
+            width = Math.round(width * (FOTO_MAX_DIMENSION / height));
+            height = FOTO_MAX_DIMENSION;
+          }
+        }
+
+        const canvasTmp = document.createElement('canvas');
+        canvasTmp.width = width;
+        canvasTmp.height = height;
+        canvasTmp.getContext('2d').drawImage(img, 0, 0, width, height);
+
+        canvasTmp.toBlob(
+          (blobComprimido) => {
+            if (!blobComprimido) {
+              reject(new Error('No se pudo procesar la imagen'));
+              return;
+            }
+            resolve(blobComprimido);
+          },
+          'image/jpeg',
+          FOTO_CALIDAD
+        );
+      };
+
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error('No se pudo leer la imagen'));
+      };
+
+      img.src = url;
+    });
+  }
+
+  // Punto único que usan los 3 orígenes de foto (cámara web, cámara
+  // nativa del celular, galería) para comprimir y guardar el
+  // resultado en fotoSeleccionada, con el mismo mensaje de feedback.
+  async function procesarFotoSeleccionada(origen) {
+    try {
+      const comprimida = await comprimirImagen(origen);
+      fotoSeleccionada = comprimida;
+      const kbFinal = Math.round(comprimida.size / 1024);
+      showToast(`✓ Foto lista (${kbFinal} KB) — se subirá al guardar`);
+    } catch (err) {
+      console.error('Error al comprimir foto:', err);
+      // Si la compresión falla por cualquier motivo (ej. formato raro
+      // de imagen), usamos el archivo original tal cual en vez de
+      // bloquear al usuario — mejor subir una foto pesada que ninguna.
+      fotoSeleccionada = origen;
+      showToast('✓ Foto lista — se subirá al guardar');
+    }
+  }
+
   captureBtn && captureBtn.addEventListener('click', () => {
     if (!video || !canvas) return;
     const w = video.videoWidth || 640;
@@ -142,15 +219,16 @@ document.addEventListener('DOMContentLoaded', function () {
     overlay.setAttribute('aria-hidden', 'true');
     stopStream();
 
-    // canvas.toBlob es asíncrono (recibe un callback), por eso
-    // fotoSeleccionada se asigna dentro de él, no justo después.
+    // canvas.toBlob es asíncrono (recibe un callback). El blob que sale
+    // de aquí ya es un JPEG, pero igual pasa por procesarFotoSeleccionada
+    // para aplicar el mismo límite de dimensión máxima que las otras
+    // 2 fuentes (cámara nativa del celular y galería) — consistencia.
     canvas.toBlob((blob) => {
       if (!blob) {
         showToast('✗ No se pudo capturar la foto, intenta de nuevo');
         return;
       }
-      fotoSeleccionada = blob;
-      showToast('✓ Foto lista — se subirá al guardar');
+      procesarFotoSeleccionada(blob);
     }, 'image/jpeg', 0.9);
   });
 
@@ -168,20 +246,18 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
-  fileInput.addEventListener('change', (e) => {
+  fileInput.addEventListener('change', async (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) { showToast('Selecciona una imagen válida'); return; }
-    fotoSeleccionada = file;
-    showToast('✓ Foto lista — se subirá al guardar');
+    await procesarFotoSeleccionada(file);
   });
 
-  fileInputLocal && fileInputLocal.addEventListener('change', (e) => {
+  fileInputLocal && fileInputLocal.addEventListener('change', async (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) { showToast('Selecciona una imagen válida'); return; }
-    fotoSeleccionada = file;
-    showToast('✓ Foto lista — se subirá al guardar');
+    await procesarFotoSeleccionada(file);
   });
 
   // ---------- Helpers de catálogo ----------
@@ -222,9 +298,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const partes = [
       normalizarTexto(marca.nombre).slice(0, 3),
-      normalizarTexto(estilo.estilo).slice(0, 3),
-      String(tamano.tamano).padStart(2, '0'),
-      colorCode
+                          normalizarTexto(estilo.estilo).slice(0, 3),
+                          String(tamano.tamano).padStart(2, '0'),
+                          colorCode
     ];
 
     codigoInput.value = partes.join('-');
@@ -249,9 +325,9 @@ document.addEventListener('DOMContentLoaded', function () {
     if (derivado) colorText += ` (${derivado})`;
 
     previewText.innerHTML = `
-      <strong>${marca.nombre}</strong> ${estilo.estilo} |
-      ${tamano.tamano}" | ${colorText}<br>
-      <em>${tipo === 'entrada' ? 'Entrada' : 'Salida'} de ${cantidad} globos — ${ubicacion.nombre}</em>
+    <strong>${marca.nombre}</strong> ${estilo.estilo} |
+    ${tamano.tamano}" | ${colorText}<br>
+    <em>${tipo === 'entrada' ? 'Entrada' : 'Salida'} de ${cantidad} globos — ${ubicacion.nombre}</em>
     `;
   }
 
@@ -261,9 +337,9 @@ document.addEventListener('DOMContentLoaded', function () {
     try {
       const [marcas, estilos, tamanos, ubicaciones] = await Promise.all([
         fetchJSON(`${API_BASE}/marca`),
-        fetchJSON(`${API_BASE}/estilo`),
-        fetchJSON(`${API_BASE}/tamano`),
-        fetchJSON(`${API_BASE}/ubicacion`)
+                                                                        fetchJSON(`${API_BASE}/estilo`),
+                                                                        fetchJSON(`${API_BASE}/tamano`),
+                                                                        fetchJSON(`${API_BASE}/ubicacion`)
       ]);
 
       CATALOGO.marcas = marcas;
@@ -523,10 +599,10 @@ document.addEventListener('DOMContentLoaded', function () {
           const resFoto = await fetch(`${API_BASE}/globo/${globo.id_globo}/foto`, {
             method: 'POST',
             credentials: 'include', // manda la cookie de sesión (httpOnly)
-            body: datosFoto
-            // OJO: NO se pone header 'Content-Type' aquí — el navegador
-            // lo arma solo (incluye el "boundary" necesario para
-            // FormData). Ponerlo a mano rompe la subida.
+          body: datosFoto
+          // OJO: NO se pone header 'Content-Type' aquí — el navegador
+          // lo arma solo (incluye el "boundary" necesario para
+          // FormData). Ponerlo a mano rompe la subida.
           });
 
           if (resFoto.ok) {
@@ -605,32 +681,32 @@ document.addEventListener('DOMContentLoaded', function () {
   // todos se llaman igual.
   const RECURSOS_ADMIN = {
     marca: { idField: 'id_marca', texto: (item) => item.nombre },
-    estilo: { idField: 'id_estilo', texto: (item) => item.estilo },
-    tamano: { idField: 'id_tamano', texto: (item) => `${item.tamano}"` },
-    color: {
-      idField: 'id_color',
-      // GET /api/v1/color ya incluye la marca relacionada (ver
-      // color/controller.js → include: Marca). La mostramos porque
-      // el mismo nombre de color (ej. "Rojo") existe una vez por
-      // cada marca — sin esto sería imposible saber cuál es cuál.
-      texto: (item) => `${item.color} — ${item.Marca ? item.Marca.nombre : 'marca desconocida'}`
-    },
-    ubicacion: { idField: 'id_ubicacion', texto: (item) => item.nombre },
-    globo: {
-      idField: 'id_globo',
-      // Los globos vienen con sus catálogos relacionados incluidos
-      // (ver globo/controller.js → includeCatalogo), así que podemos
-      // armar un nombre legible tipo "Cielo Estándar 10 Verde" en vez
-      // de solo mostrar números de ids.
-      texto: (item) => {
-        const marca = item.Marca ? item.Marca.nombre : `marca#${item.id_marca}`;
-        const estilo = item.Estilo ? item.Estilo.estilo : `estilo#${item.id_estilo}`;
-        const tamano = item.Tamano ? item.Tamano.tamano : `tamaño#${item.id_tamano}`;
-        const color = item.Color ? item.Color.color : `color#${item.id_color}`;
-        const foto = ''; // ya no se usa aquí: la foto real se muestra como miniatura (ver render de la lista)
-        return `${marca} ${estilo} ${tamano}" ${color}${foto} — ${item.codigo_interno || 'sin código'}`;
-      }
-    }
+                          estilo: { idField: 'id_estilo', texto: (item) => item.estilo },
+                          tamano: { idField: 'id_tamano', texto: (item) => `${item.tamano}"` },
+                          color: {
+                            idField: 'id_color',
+                            // GET /api/v1/color ya incluye la marca relacionada (ver
+                            // color/controller.js → include: Marca). La mostramos porque
+                            // el mismo nombre de color (ej. "Rojo") existe una vez por
+                            // cada marca — sin esto sería imposible saber cuál es cuál.
+                            texto: (item) => `${item.color} — ${item.Marca ? item.Marca.nombre : 'marca desconocida'}`
+                          },
+                          ubicacion: { idField: 'id_ubicacion', texto: (item) => item.nombre },
+                          globo: {
+                            idField: 'id_globo',
+                            // Los globos vienen con sus catálogos relacionados incluidos
+                            // (ver globo/controller.js → includeCatalogo), así que podemos
+                            // armar un nombre legible tipo "Cielo Estándar 10 Verde" en vez
+                            // de solo mostrar números de ids.
+                            texto: (item) => {
+                              const marca = item.Marca ? item.Marca.nombre : `marca#${item.id_marca}`;
+                              const estilo = item.Estilo ? item.Estilo.estilo : `estilo#${item.id_estilo}`;
+                              const tamano = item.Tamano ? item.Tamano.tamano : `tamaño#${item.id_tamano}`;
+                              const color = item.Color ? item.Color.color : `color#${item.id_color}`;
+                              const foto = ''; // ya no se usa aquí: la foto real se muestra como miniatura (ver render de la lista)
+return `${marca} ${estilo} ${tamano}" ${color}${foto} — ${item.codigo_interno || 'sin código'}`;
+                            }
+                          }
   };
 
   if (btnAdminCargar) {
@@ -663,8 +739,8 @@ document.addEventListener('DOMContentLoaded', function () {
           // no tiene sentido mostrarlo en marca/estilo/color/etc, ni
           // en un producto que todavía no tiene imagen.
           const botonQuitarFoto = (recurso === 'globo' && item.foto_url)
-            ? `<button type="button" class="btn-eliminar btn-quitar-foto" data-id="${id}" style="background: var(--tertiary, #64748b);">Quitar foto</button>`
-            : '';
+          ? `<button type="button" class="btn-eliminar btn-quitar-foto" data-id="${id}" style="background: var(--tertiary, #64748b);">Quitar foto</button>`
+          : '';
 
           // Miniatura real de la foto (no solo un ícono): así se
           // confirma visualmente cuál imagen es antes de decidir
@@ -673,18 +749,18 @@ document.addEventListener('DOMContentLoaded', function () {
           // saber cuál es cuál. Al hacer clic, abre la foto en tamaño
           // completo en una pestaña nueva.
           const miniatura = (recurso === 'globo' && item.foto_url)
-            ? `<a href="${item.foto_url}" target="_blank" rel="noopener" class="admin-thumb-link" title="Ver foto en tamaño completo">
-                 <img src="${item.foto_url}" alt="Foto del producto" class="admin-thumb" loading="lazy" />
-               </a>`
-            : '';
+          ? `<a href="${item.foto_url}" target="_blank" rel="noopener" class="admin-thumb-link" title="Ver foto en tamaño completo">
+          <img src="${item.foto_url}" alt="Foto del producto" class="admin-thumb" loading="lazy" />
+          </a>`
+          : '';
 
           fila.innerHTML = `
-            ${miniatura}
-            <span>${config.texto(item)}</span>
-            <div style="display:flex; gap:8px; flex-shrink:0;">
-              ${botonQuitarFoto}
-              <button type="button" class="btn-eliminar" data-id="${id}">Eliminar</button>
-            </div>
+          ${miniatura}
+          <span>${config.texto(item)}</span>
+          <div style="display:flex; gap:8px; flex-shrink:0;">
+          ${botonQuitarFoto}
+          <button type="button" class="btn-eliminar" data-id="${id}">Eliminar</button>
+          </div>
           `;
           adminLista.appendChild(fila);
         });
