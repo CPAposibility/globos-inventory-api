@@ -24,6 +24,14 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+
+// Azure App Service pone el servidor detrás de un proxy interno. Sin
+// esto, Express vería siempre la misma IP (la del proxy) para todos
+// los visitantes, lo que rompería el rate limiting del login (ver
+// api/v1/auth/routers.js) — con esto, lee la IP real del visitante
+// desde el header que Azure ya manda (X-Forwarded-For).
+app.set("trust proxy", 1);
+
 app.use(cors());
 app.use(express.json());
 
