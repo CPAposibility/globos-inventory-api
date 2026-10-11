@@ -276,6 +276,18 @@ document.addEventListener('DOMContentLoaded', function () {
     return lista.find(item => String(item[valueKey]) === String(id));
   }
 
+  // Estilos que NO llevan tamaño (son de tamaño único). Se compara con
+  // normalizarTexto (mayúsculas, sin acentos), así que "Salchicha",
+  // "salchicha" o "SALCHICHA" cuentan igual. Si algún día otro estilo
+  // tampoco lleva tamaño, solo se agrega aquí en mayúsculas.
+  const ESTILOS_SIN_TAMANO = ['SALCHICHA'];
+
+  // true si el estilo seleccionado en este momento no lleva tamaño.
+  function estiloSinTamano() {
+    const estilo = buscarPorId(CATALOGO.estilos, 'id_estilo', estiloSelect.value);
+    return !!estilo && ESTILOS_SIN_TAMANO.includes(normalizarTexto(estilo.estilo));
+  }
+
   // ---------- Código interno y previsualización ----------
 
   function generateCode() {
@@ -284,8 +296,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const tamano = buscarPorId(CATALOGO.tamanos, 'id_tamano', tamanoSelect.value);
     const color = buscarPorId(CATALOGO.coloresPorMarca, 'id_color', colorSelect.value);
     const derivado = colorDerivadoInput ? colorDerivadoInput.value.trim() : '';
+    const sinTamano = estiloSinTamano();
 
-    if (!marca || !estilo || !tamano || !color) {
+    // El tamaño solo es obligatorio si el estilo sí lo lleva.
+    if (!marca || !estilo || !color || (!tamano && !sinTamano)) {
       codigoInput.value = '';
       return;
     }
@@ -296,12 +310,14 @@ document.addEventListener('DOMContentLoaded', function () {
       if (dcode) colorCode += dcode;
     }
 
+    // Código normal:      CIE-STA-10-ROJ
+    // Estilo sin tamaño:  CIE-SAL-ROJ   (se omite la parte del tamaño)
     const partes = [
       normalizarTexto(marca.nombre).slice(0, 3),
-                          normalizarTexto(estilo.estilo).slice(0, 3),
-                          String(tamano.tamano).padStart(2, '0'),
-                          colorCode
+      normalizarTexto(estilo.estilo).slice(0, 3)
     ];
+    if (!sinTamano) partes.push(String(tamano.tamano).padStart(2, '0'));
+    partes.push(colorCode);
 
     codigoInput.value = partes.join('-');
   }
@@ -315,8 +331,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const derivado = colorDerivadoInput ? colorDerivadoInput.value.trim() : '';
     const cantidad = cantidadInput.value;
     const tipo = tipoMovimientoSelect.value;
+    const sinTamano = estiloSinTamano();
 
-    if (!marca || !estilo || !tamano || !color || !cantidad || !ubicacion) {
+    if (!marca || !estilo || !color || !cantidad || !ubicacion || (!tamano && !sinTamano)) {
       previewText.textContent = 'Completa los campos para ver el resumen.';
       return;
     }
@@ -324,9 +341,12 @@ document.addEventListener('DOMContentLoaded', function () {
     let colorText = color.color;
     if (derivado) colorText += ` (${derivado})`;
 
+    // Si el estilo no lleva tamaño, el resumen no muestra la parte de pulgadas.
+    const tamanoText = sinTamano ? '' : `${tamano.tamano}" | `;
+
     previewText.innerHTML = `
     <strong>${marca.nombre}</strong> ${estilo.estilo} |
-    ${tamano.tamano}" | ${colorText}<br>
+    ${tamanoText}${colorText}<br>
     <em>${tipo === 'entrada' ? 'Entrada' : 'Salida'} de ${cantidad} globos — ${ubicacion.nombre}</em>
     `;
   }
@@ -388,20 +408,6 @@ document.addEventListener('DOMContentLoaded', function () {
     updatePreview();
   });
 
-  estiloSelect.addEventListener('change', function () {
-    tamanoSelect.innerHTML = '<option value="">Selecciona tamaño</option>';
-    colorSelect.innerHTML = '<option value="">Selecciona color</option>';
-    tamanoSelect.disabled = !this.value;
-    colorSelect.disabled = true;
-    cantidadInput.disabled = true;
-
-    if (this.value) {
-      llenarSelect(tamanoSelect, CATALOGO.tamanos, 'id_tamano', 'tamano', 'Selecciona tamaño');
-    }
-    generateCode();
-    updatePreview();
-  });
-
   const derivadoWrapper = document.getElementById('derivado-wrapper');
   const btnNuevoColor = document.getElementById('btn-nuevo-color');
 
@@ -412,17 +418,20 @@ document.addEventListener('DOMContentLoaded', function () {
   // real vive en el backend, no aquí).
   let esAdmin = false;
 
-  tamanoSelect.addEventListener('change', function () {
-    colorSelect.innerHTML = '<option value="">Selecciona color</option>';
-    colorSelect.disabled = !this.value;
+  // Llena y habilita el select de color con los colores de la marca
+  // elegida, y decide si se muestra el botón "+ Nuevo color".
+  // Antes esta lógica vivía solo en el listener de tamaño; se movió a
+  // una función porque ahora hay DOS caminos para llegar al color:
+  //   - estilo normal:      estilo -> tamaño -> color
+  //   - estilo sin tamaño:  estilo -> color  (ej. Salchicha)
+  function poblarColores() {
+    colorSelect.disabled = false;
     cantidadInput.disabled = true;
 
-    if (this.value) {
-      if (CATALOGO.coloresPorMarca.length === 0) {
-        colorSelect.innerHTML = '<option value="">Sin colores para esta marca — agrega uno primero</option>';
-      } else {
-        llenarSelect(colorSelect, CATALOGO.coloresPorMarca, 'id_color', 'color', 'Selecciona color');
-      }
+    if (CATALOGO.coloresPorMarca.length === 0) {
+      colorSelect.innerHTML = '<option value="">Sin colores para esta marca — agrega uno primero</option>';
+    } else {
+      llenarSelect(colorSelect, CATALOGO.coloresPorMarca, 'id_color', 'color', 'Selecciona color');
     }
 
     // El botón "+ Nuevo color" solo se muestra si: (a) el usuario es
@@ -432,6 +441,43 @@ document.addEventListener('DOMContentLoaded', function () {
     // aunque ya existan otras.
     if (btnNuevoColor) {
       btnNuevoColor.style.display = (esAdmin && marcaSelect.value) ? 'inline-block' : 'none';
+    }
+  }
+
+  estiloSelect.addEventListener('change', function () {
+    // Reiniciamos todo lo que depende del estilo.
+    tamanoSelect.innerHTML = '<option value="">Selecciona tamaño</option>';
+    tamanoSelect.disabled = true;
+    colorSelect.innerHTML = '<option value="">Selecciona color</option>';
+    colorSelect.disabled = true;
+    cantidadInput.disabled = true;
+    if (btnNuevoColor) btnNuevoColor.style.display = 'none';
+
+    if (this.value) {
+      if (estiloSinTamano()) {
+        // Estilo de tamaño único (ej. Salchicha): el select de tamaño
+        // queda deshabilitado con una leyenda y pasamos directo a color.
+        // Un select deshabilitado no entra en la validación del
+        // formulario, así que aunque tenga "required" no bloquea el guardado.
+        tamanoSelect.innerHTML = '<option value="">No aplica (tamaño único)</option>';
+        poblarColores();
+      } else {
+        tamanoSelect.disabled = false;
+        llenarSelect(tamanoSelect, CATALOGO.tamanos, 'id_tamano', 'tamano', 'Selecciona tamaño');
+      }
+    }
+    generateCode();
+    updatePreview();
+  });
+
+  tamanoSelect.addEventListener('change', function () {
+    colorSelect.innerHTML = '<option value="">Selecciona color</option>';
+    colorSelect.disabled = true;
+    cantidadInput.disabled = true;
+    if (btnNuevoColor) btnNuevoColor.style.display = 'none';
+
+    if (this.value) {
+      poblarColores();
     }
 
     generateCode();
@@ -460,7 +506,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.addEventListener('sesion-lista', function (evt) {
     esAdmin = evt.detail && evt.detail.rol === 'admin';
     if (btnNuevoColor) {
-      btnNuevoColor.style.display = (esAdmin && marcaSelect.value && tamanoSelect.value) ? 'inline-block' : 'none';
+      btnNuevoColor.style.display = (esAdmin && marcaSelect.value && (tamanoSelect.value || estiloSinTamano())) ? 'inline-block' : 'none';
     }
   });
 
@@ -524,7 +570,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const id_marca = marcaSelect.value;
     const id_estilo = estiloSelect.value;
-    const id_tamano = tamanoSelect.value;
+    // Si el estilo no lleva tamaño (ej. Salchicha), el id_tamano es null.
+    const sinTamano = estiloSinTamano();
+    const id_tamano = sinTamano ? null : tamanoSelect.value;
     const id_color = colorSelect.value;
     const id_ubicacion = ubicacionSelect.value;
     const tipo_movimiento = tipoMovimientoSelect.value;
@@ -537,7 +585,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     try {
       // 1) ¿Ya existe este SKU (marca+estilo+tamaño+color)?
-      const query = `id_marca=${id_marca}&id_estilo=${id_estilo}&id_tamano=${id_tamano}&id_color=${id_color}`;
+      // Para estilos sin tamaño mandamos id_tamano=null: el backend lo
+      // traduce a "IS NULL" y solo encuentra globos que de verdad no
+      // tienen tamaño (si omitiéramos el filtro, regresaría cualquiera).
+      const query = `id_marca=${id_marca}&id_estilo=${id_estilo}&id_tamano=${sinTamano ? 'null' : id_tamano}&id_color=${id_color}`;
       const existentes = await fetchJSON(`${API_BASE}/globo?${query}`);
 
       let globo;
@@ -701,10 +752,14 @@ document.addEventListener('DOMContentLoaded', function () {
                             texto: (item) => {
                               const marca = item.Marca ? item.Marca.nombre : `marca#${item.id_marca}`;
                               const estilo = item.Estilo ? item.Estilo.estilo : `estilo#${item.id_estilo}`;
-                              const tamano = item.Tamano ? item.Tamano.tamano : `tamaño#${item.id_tamano}`;
+                              // Los globos de estilos sin tamaño (Salchicha) tienen id_tamano null:
+                              // en ese caso no mostramos nada de pulgadas.
+                              const tamanoTxt = item.id_tamano == null
+                                ? ''
+                                : ` ${item.Tamano ? item.Tamano.tamano : `tamaño#${item.id_tamano}`}"`;
                               const color = item.Color ? item.Color.color : `color#${item.id_color}`;
                               const foto = ''; // ya no se usa aquí: la foto real se muestra como miniatura (ver render de la lista)
-return `${marca} ${estilo} ${tamano}" ${color}${foto} — ${item.codigo_interno || 'sin código'}`;
+return `${marca} ${estilo}${tamanoTxt} ${color}${foto} — ${item.codigo_interno || 'sin código'}`;
                             }
                           }
   };

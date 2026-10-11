@@ -6,6 +6,11 @@ import { subirImagenBlob } from "../config/blobStorage.js";
 // en lugar de solo los IDs.
 const includeCatalogo = [Marca, Estilo, Tamano, Color];
 
+// Estilos que NO llevan tamaño (son de tamaño único). Se comparan en
+// minúsculas contra el campo "estilo" del catálogo. Si algún día otro
+// estilo tampoco lleva tamaño, solo se agrega aquí.
+const ESTILOS_SIN_TAMANO = ["salchicha"];
+
 const controller = {
   /**
    * GET /api/v1/globo
@@ -30,7 +35,10 @@ const controller = {
       const where = {};
       if (id_marca) where.id_marca = id_marca;
       if (id_estilo) where.id_estilo = id_estilo;
-      if (id_tamano) where.id_tamano = id_tamano;
+      // id_tamano=null (literal) pide los globos SIN tamaño (Salchicha).
+      // Sequelize convierte { id_tamano: null } en "id_tamano IS NULL".
+      if (id_tamano === "null") where.id_tamano = null;
+      else if (id_tamano) where.id_tamano = id_tamano;
       if (id_color) where.id_color = id_color;
 
       // Ejecutamos la consulta con el filtro armado arriba y traemos
@@ -61,8 +69,31 @@ const controller = {
         costo_mayoreo, costo_menudeo, costo_caja, costo_media
       } = req.body;
 
+      // Buscamos el estilo para saber si lleva tamaño o no.
+      const estiloRow = await Estilo.findByPk(id_estilo);
+      if (!estiloRow) {
+        return res.status(400).json({ message: "El estilo indicado no existe" });
+      }
+      const sinTamano = ESTILOS_SIN_TAMANO.includes(
+        String(estiloRow.estilo || "").trim().toLowerCase()
+      );
+
+      // Normalizamos: "", "null", undefined o null => null (sin tamaño).
+      let tamanoFinal = id_tamano;
+      if (tamanoFinal === "" || tamanoFinal === "null" || tamanoFinal === undefined) {
+        tamanoFinal = null;
+      }
+
+      if (sinTamano) {
+        // Estilo de tamaño único: siempre se guarda sin tamaño, aunque
+        // por error llegue uno en el body.
+        tamanoFinal = null;
+      } else if (tamanoFinal === null) {
+        return res.status(400).json({ message: "Este estilo requiere un tamaño" });
+      }
+
       const nuevo = await Globo.create({
-        id_marca, id_estilo, id_tamano, id_color, codigo_interno,
+        id_marca, id_estilo, id_tamano: tamanoFinal, id_color, codigo_interno,
         costo_mayoreo, costo_menudeo, costo_caja, costo_media
       });
 
