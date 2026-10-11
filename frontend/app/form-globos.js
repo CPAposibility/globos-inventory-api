@@ -314,7 +314,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Estilo sin tamaño:  CIE-SAL-ROJ   (se omite la parte del tamaño)
     const partes = [
       normalizarTexto(marca.nombre).slice(0, 3),
-      normalizarTexto(estilo.estilo).slice(0, 3)
+                          normalizarTexto(estilo.estilo).slice(0, 3)
     ];
     if (!sinTamano) partes.push(String(tamano.tamano).padStart(2, '0'));
     partes.push(colorCode);
@@ -580,7 +580,26 @@ document.addEventListener('DOMContentLoaded', function () {
     const codigo_interno = codigoInput.value;
     const derivado = colorDerivadoInput ? colorDerivadoInput.value.trim() : '';
 
-    btnGuardar.disabled = true;
+    // Confirmación antes de guardar: en el celular es fácil tocar
+    // "Guardar" por error o con datos incompletos, y un movimiento
+    // guardado no se puede deshacer desde esta pantalla. Mostramos el
+    // mismo resumen de la vista previa + si hay foto lista o no.
+    // Si cancela, no se toca nada: el formulario queda como estaba.
+    const resumenTexto = previewText.innerHTML
+    .replace(/<br\s*\/?>/gi, '\n')   // saltos de línea
+    .replace(/<[^>]+>/g, '')           // quita las etiquetas HTML
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n\s+/g, '\n')
+    .trim();
+    const textoFoto = fotoSeleccionada
+    ? 'Foto: lista para subir'
+    : 'Foto: NO hay foto seleccionada';
+    const confirmado = confirm(
+      `¿Confirmas este movimiento?\n\n${resumenTexto}\nCódigo: ${codigo_interno}\n${textoFoto}`
+    );
+    if (!confirmado) return;
+
+                        btnGuardar.disabled = true;
     btnGuardar.textContent = 'Guardando...';
 
     try {
@@ -663,7 +682,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // no es un error grave, el movimiento sí se guardó bien.
             showToast(`✓ Movimiento guardado — Código: ${codigo_interno}. (La foto no se actualizó: ya existe una y solo un admin puede reemplazarla)`, 6000);
           } else {
-            showToast(`✓ Movimiento guardado — Código: ${codigo_interno}. (No se pudo subir la foto, intenta más tarde)`, 5000);
+            showToast(`✓ Movimiento guardado — Código: ${codigo_interno}. (No se pudo subir la foto — error ${resFoto.status}. Usa "Guardar solo la foto")`, 6000);
           }
         } catch (errFoto) {
           // Error de red al subir la foto — igual, el movimiento ya
@@ -719,6 +738,100 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  // ---------- Botón "Guardar solo la foto" ----------
+
+  // Caso de uso: se guardó un movimiento pero la foto no se subió (mala
+  // señal en el celular, olvido, etc.). Antes no había forma de agregarla
+  // después sin registrar OTRO movimiento. Este botón sube únicamente la
+  // foto al producto que está seleccionado en el formulario, SIN crear
+  // ningún movimiento ni tocar el inventario.
+  //
+  // Se crea desde JS (junto al botón Guardar) para no depender de
+  // cambios en formulario2.html.
+  const btnSoloFoto = document.createElement('button');
+  btnSoloFoto.type = 'button'; // type=button: NO dispara el submit del formulario
+  btnSoloFoto.id = 'btn-solo-foto';
+  btnSoloFoto.className = btnGuardar.className;
+  btnSoloFoto.textContent = 'Guardar solo la foto';
+  btnSoloFoto.style.marginTop = '8px';
+  btnSoloFoto.style.background = 'var(--tertiary, #64748b)'; // gris, para distinguirlo de Guardar
+  btnGuardar.insertAdjacentElement('afterend', btnSoloFoto);
+
+  btnSoloFoto.addEventListener('click', async function () {
+    const sinTamano = estiloSinTamano();
+
+    // Hay que identificar el producto: marca + estilo + (tamaño) + color.
+    if (!marcaSelect.value || !estiloSelect.value || !colorSelect.value ||
+      (!sinTamano && !tamanoSelect.value)) {
+      showToast('Primero selecciona marca, estilo, tamaño (si aplica) y color del producto');
+    return;
+      }
+      if (!fotoSeleccionada) {
+        showToast('Primero toma o selecciona una foto');
+        return;
+      }
+
+      btnSoloFoto.disabled = true;
+      btnSoloFoto.textContent = 'Subiendo foto...';
+
+      try {
+        // Buscamos el producto exacto (mismo criterio que el guardado normal).
+        const query = `id_marca=${marcaSelect.value}&id_estilo=${estiloSelect.value}&id_tamano=${sinTamano ? 'null' : tamanoSelect.value}&id_color=${colorSelect.value}`;
+        const existentes = await fetchJSON(`${API_BASE}/globo?${query}`);
+
+        if (existentes.length === 0) {
+          throw new Error('Este producto todavía no existe en el catálogo. Guárdalo primero con un movimiento.');
+        }
+        const globo = existentes[0];
+
+        // Si ya tiene foto y no es admin, el backend lo rechazaría con 403.
+        // Avisamos antes para no gastar la subida.
+        if (globo.foto_url && !esAdmin) {
+          throw new Error('Este producto ya tiene foto. Solo un administrador puede reemplazarla.');
+        }
+
+        const confirmado = confirm(
+          `¿Subir esta foto al producto ${globo.codigo_interno || '#' + globo.id_globo}?` +
+          (globo.foto_url ? '\n\nOJO: ya tiene una foto y será REEMPLAZADA.' : '')
+        );
+        if (!confirmado) return;
+
+        const datosFoto = new FormData();
+        datosFoto.append('foto', fotoSeleccionada, 'foto.jpg'); // "foto" = campo que espera multer
+        const resFoto = await fetch(`${API_BASE}/globo/${globo.id_globo}/foto`, {
+          method: 'POST',
+          credentials: 'include',
+          body: datosFoto // sin header Content-Type: el navegador arma el boundary solo
+        });
+
+        if (!resFoto.ok) {
+          const errBody = await resFoto.json().catch(() => ({}));
+          throw new Error(errBody.message || `Error ${resFoto.status} al subir la foto`);
+        }
+
+        showToast(`✓ Foto guardada en ${globo.codigo_interno || 'el producto'}`);
+
+        // Limpiamos el formulario para el siguiente producto.
+        fotoSeleccionada = null;
+        form.reset();
+        estiloSelect.innerHTML = '<option value="">Selecciona estilo</option>';
+        tamanoSelect.innerHTML = '<option value="">Selecciona tamaño</option>';
+        colorSelect.innerHTML = '<option value="">Selecciona color</option>';
+        estiloSelect.disabled = true;
+        tamanoSelect.disabled = true;
+        colorSelect.disabled = true;
+        cantidadInput.disabled = true;
+        codigoInput.value = '';
+        previewText.textContent = 'Completa los campos para ver el resumen.';
+      } catch (err) {
+        console.error(err);
+        showToast(`✗ ${err.message}`, 6000);
+      } finally {
+        btnSoloFoto.disabled = false;
+        btnSoloFoto.textContent = 'Guardar solo la foto';
+      }
+  });
+
   // ---------- Panel de administración: eliminar registros ----------
 
   const adminPanel = document.getElementById('admin-panel');
@@ -755,8 +868,8 @@ document.addEventListener('DOMContentLoaded', function () {
                               // Los globos de estilos sin tamaño (Salchicha) tienen id_tamano null:
                               // en ese caso no mostramos nada de pulgadas.
                               const tamanoTxt = item.id_tamano == null
-                                ? ''
-                                : ` ${item.Tamano ? item.Tamano.tamano : `tamaño#${item.id_tamano}`}"`;
+                              ? ''
+                              : ` ${item.Tamano ? item.Tamano.tamano : `tamaño#${item.id_tamano}`}"`;
                               const color = item.Color ? item.Color.color : `color#${item.id_color}`;
                               const foto = ''; // ya no se usa aquí: la foto real se muestra como miniatura (ver render de la lista)
 return `${marca} ${estilo}${tamanoTxt} ${color}${foto} — ${item.codigo_interno || 'sin código'}`;
