@@ -9,6 +9,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   const grid = document.getElementById('product-grid');
   const quoteButton = document.getElementById('floating-quote');
   const cartCount = document.getElementById('cart-count');
+  const cartToggle = document.getElementById('cart-toggle');
+  const cartPanel = document.getElementById('cart-panel');
+  const cartClose = document.getElementById('cart-close');
+  const cartItems = document.getElementById('cart-items');
+  const cartEmpty = document.getElementById('cart-empty');
+  const cartQuote = document.getElementById('cart-quote');
   const imageDialog = document.getElementById('product-image-dialog');
   const largeImage = document.getElementById('product-image-large');
   const imageCaption = document.getElementById('product-image-caption');
@@ -18,7 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const carrito = cargarCarrito();
 
   function actualizarCotizacion() {
-    const productos = Array.from(carrito.values());
+    const productos = Array.from(carrito, ([id, producto]) => ({ id, ...producto }));
     const cantidad = productos.reduce((total, producto) => total + producto.cantidad, 0);
     const detalle = productos
       .map((producto) => `- ${producto.nombre} (cantidad: ${producto.cantidad})`)
@@ -33,17 +39,131 @@ document.addEventListener('DOMContentLoaded', async () => {
       cantidad ? `Cotizar pedido con ${cantidad} ${cantidad === 1 ? 'producto' : 'productos'}` : 'Cotizar pedido'
     );
     cartCount.textContent = cantidad;
+    cartToggle.setAttribute(
+      'aria-label',
+      cantidad ? `Ver lista de artículos, ${cantidad} ${cantidad === 1 ? 'producto' : 'productos'}` : 'Ver lista de artículos vacía'
+    );
+    cartQuote.href = quoteButton.href;
+    actualizarControlesCantidad();
+    renderizarListaCarrito(productos);
   }
 
-  function agregarAlCarrito(id, nombre) {
+  function actualizarCantidad(id, nombre, cambio) {
+    const controlActivo = document.activeElement?.closest('.quantity-control');
+    const contextoActivo = controlActivo?.closest('.floating-cart-item') ? 'lista' : 'catalogo';
+    const accionActiva = document.activeElement?.dataset.action;
     const producto = carrito.get(id);
-    carrito.set(id, {
-      nombre,
-      cantidad: producto ? producto.cantidad + 1 : 1
-    });
+    const cantidad = (producto?.cantidad || 0) + cambio;
+    if (cantidad <= 0) {
+      carrito.delete(id);
+    } else {
+      carrito.set(id, { nombre, cantidad });
+    }
     guardarCarrito(carrito);
     actualizarCotizacion();
+
+    if (controlActivo && accionActiva) {
+      const controles = Array.from(document.querySelectorAll('.quantity-control'))
+        .filter((control) => control.dataset.productId === id);
+      const controlDestino =
+        controles.find((control) => Boolean(control.closest('.floating-cart-item')) === (contextoActivo === 'lista')) ||
+        controles[0];
+      controlDestino?.querySelector(`[data-action="${accionActiva}"]`)?.focus();
+    }
   }
+
+  function crearControlCantidad(id, nombre) {
+    const control = document.createElement('div');
+    control.className = 'quantity-control';
+    control.dataset.productId = id;
+
+    const botonMenos = document.createElement('button');
+    botonMenos.className = 'quantity-control-button';
+    botonMenos.type = 'button';
+    botonMenos.dataset.action = 'remove';
+    botonMenos.setAttribute('aria-label', `Quitar una unidad de ${nombre}`);
+    botonMenos.textContent = '-';
+    botonMenos.addEventListener('click', () => actualizarCantidad(id, nombre, -1));
+
+    const cantidad = document.createElement('span');
+    cantidad.className = 'quantity-control-value';
+    cantidad.textContent = carrito.get(id)?.cantidad || 'Agregar';
+
+    const botonMas = document.createElement('button');
+    botonMas.className = 'quantity-control-button';
+    botonMas.type = 'button';
+    botonMas.dataset.action = 'add';
+    botonMas.setAttribute('aria-label', `Agregar ${nombre} al pedido`);
+    botonMas.textContent = '+';
+    botonMas.addEventListener('click', () => actualizarCantidad(id, nombre, 1));
+
+    control.append(botonMenos, cantidad, botonMas);
+    botonMenos.disabled = !carrito.has(id);
+    return control;
+  }
+
+  function actualizarControlesCantidad() {
+    document.querySelectorAll('.quantity-control').forEach((control) => {
+      const producto = carrito.get(control.dataset.productId);
+      const cantidad = producto?.cantidad || 0;
+      const textoCantidad = control.querySelector('.quantity-control-value');
+      const botonMenos = control.querySelector('[data-action="remove"]');
+      textoCantidad.textContent = cantidad || 'Agregar';
+      botonMenos.disabled = cantidad === 0;
+      botonMenos.setAttribute(
+        'aria-label',
+        cantidad ? `Quitar una unidad de ${producto.nombre}` : 'No hay unidades para quitar'
+      );
+    });
+  }
+
+  function renderizarListaCarrito(productos) {
+    cartItems.replaceChildren();
+    cartEmpty.hidden = productos.length > 0;
+    cartQuote.setAttribute('aria-label', productos.length ? 'Cotizar artículos de la lista por WhatsApp' : 'Cotizar pedido por WhatsApp');
+
+    productos.forEach((producto) => {
+      const elemento = document.createElement('li');
+      elemento.className = 'floating-cart-item';
+
+      const nombre = document.createElement('span');
+      nombre.className = 'floating-cart-item-name';
+      nombre.textContent = producto.nombre;
+
+      elemento.append(nombre, crearControlCantidad(producto.id, producto.nombre));
+      cartItems.appendChild(elemento);
+    });
+  }
+
+  function alternarListaCarrito(abierta) {
+    cartPanel.hidden = !abierta;
+    cartToggle.setAttribute('aria-expanded', String(abierta));
+    if (abierta) cartClose.focus();
+  }
+
+  cartToggle.addEventListener('click', () => alternarListaCarrito(cartPanel.hidden));
+  cartClose.addEventListener('click', () => {
+    alternarListaCarrito(false);
+    cartToggle.focus();
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !cartPanel.hidden) {
+      alternarListaCarrito(false);
+      cartToggle.focus();
+    }
+  });
+  // Cierra la lista al tocar fuera del área flotante (botones + panel).
+  // Se usa event.composedPath() en lugar de event.target.closest(...) porque
+  // al tocar "+" o "-" dentro de la lista, la lista se vuelve a dibujar y el
+  // botón tocado ya no está en la página cuando este listener se ejecuta:
+  // closest() no encontraba su contenedor y cerraba la lista por error.
+  // composedPath() se calcula al momento del clic, antes de que cambie el DOM.
+  const areaFlotante = cartPanel.closest('.floating-actions');
+  document.addEventListener('click', (event) => {
+    if (!cartPanel.hidden && !event.composedPath().includes(areaFlotante)) {
+      alternarListaCarrito(false);
+    }
+  });
 
   function ampliarImagen(src, nombre) {
     if (!imageDialog || !largeImage) return;
@@ -121,7 +241,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       grillaMarca.className = 'brand-product-grid';
       productosMarca.forEach((producto) => {
         const stock = inventarioDisponible ? (stockPorProducto[producto.id_globo] || 0) : null;
-        grillaMarca.appendChild(crearTarjeta(producto, stock, agregarAlCarrito, ampliarImagen));
+        grillaMarca.appendChild(crearTarjeta(producto, stock, crearControlCantidad, ampliarImagen));
       });
 
       seccionMarca.append(tituloMarca, grillaMarca);
@@ -226,7 +346,7 @@ function normalizarNombreMarca(nombreMarca) {
  * Crea una tarjeta y conecta sus acciones de agregar al pedido y ampliar foto.
  * @param {number|null} stock - Existencias sumadas; null si no se pudo consultar el inventario.
  */
-function crearTarjeta(producto, stock, agregarAlCarrito, ampliarImagen) {
+function crearTarjeta(producto, stock, crearControlCantidad, ampliarImagen) {
   const marca = producto.Marca ? producto.Marca.nombre : '';
   const estilo = producto.Estilo ? producto.Estilo.estilo : '';
   const tamano = producto.Tamano ? producto.Tamano.tamano : '';
@@ -284,23 +404,9 @@ function crearTarjeta(producto, stock, agregarAlCarrito, ampliarImagen) {
   nombreProducto.className = 'product-tile-name';
   nombreProducto.textContent = nombre;
 
-  const botonAgregar = document.createElement('button');
-  botonAgregar.className = 'product-tile-cta';
-  botonAgregar.type = 'button';
-  botonAgregar.setAttribute('aria-label', `Agregar ${nombre} al pedido`);
-  botonAgregar.title = 'Agregar al pedido';
-  botonAgregar.innerHTML = `
-    <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
-      <path d="M3 4h2l2.2 10.1a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 1.9-1.4L21 8H6" />
-      <circle cx="10" cy="20" r="1" />
-      <circle cx="18" cy="20" r="1" />
-      <path d="M13 5v6M10 8h6" />
-    </svg>
-    <span>Agregar</span>
-  `;
-  botonAgregar.addEventListener('click', () => agregarAlCarrito(String(producto.id_globo), nombre));
+  const controlCantidad = crearControlCantidad(String(producto.id_globo), nombre);
 
-  cuerpo.append(nombreProducto, botonAgregar);
+  cuerpo.append(nombreProducto, controlCantidad);
   tarjeta.append(contenedorImagen, cuerpo);
   return tarjeta;
 }

@@ -44,7 +44,6 @@
     -->
     <header class="topbar">
       <div class="brand" aria-label="El Guateque home">
-        <span class="brand-mark">EG</span>
         <span class="brand-text">El Guateque</span>
       </div>
 
@@ -95,20 +94,20 @@
       <div class="hero-visual" aria-label="Producto destacado">
         <div class="product-card">
           <div class="card-top">
-            <span class="mini-badge">Top venta</span>
-            <span class="mini-price">$890</span>
+            <span class="mini-badge">Lo mas vendido</span>
+            <span class="mini-price">$100</span>
           </div>
 
-          <h2>Neon Party</h2>
+          <h2>Batukada</h2>
 
           <div class="mini-grid">
             <div>
               <span>Incluye</span>
-              <strong>24 globos</strong>
+              <strong>75 piezas</strong>
             </div>
             <div>
-              <span>Estilo</span>
-              <strong>Moderno</strong>
+              <span>Mini Batukada</span>
+              <strong>55 piezas por solo $100 pesos</strong>
             </div>
           </div>
 
@@ -243,21 +242,55 @@
     </footer>
   </div>
 
-  <a
-    class="floating-quote"
-    id="floating-quote"
-    href="https://wa.me/5215500000000?text=Hola%2C%20me%20gustar%C3%ADa%20cotizar%20un%20pedido"
-    target="_blank"
-    rel="noreferrer"
-    aria-label="Cotizar pedido"
-  >
-    <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
-      <path d="M7 3h10a2 2 0 0 1 2 2v16l-3-2-3 2-3-2-3 2V5a2 2 0 0 1 2-2Z" />
-      <path d="M9 8h6M9 12h6M9 16h3" />
-    </svg>
-    <span>Cotizar</span>
-    <span class="floating-quote-count" id="cart-count" aria-live="polite">0</span>
-  </a>
+  <div class="floating-actions">
+    <section class="floating-cart-panel" id="cart-panel" aria-labelledby="cart-panel-title" hidden>
+      <div class="floating-cart-header">
+        <h2 id="cart-panel-title">Tu lista de artículos</h2>
+        <button class="floating-cart-close" id="cart-close" type="button" aria-label="Cerrar lista">&times;</button>
+      </div>
+      <ul class="floating-cart-items" id="cart-items" aria-live="polite"></ul>
+      <p class="floating-cart-empty" id="cart-empty">Aún no agregas productos.</p>
+      <a
+        class="floating-cart-quote"
+        id="cart-quote"
+        href="https://wa.me/5215500000000?text=Hola%2C%20me%20gustar%C3%ADa%20cotizar%20un%20pedido"
+        target="_blank"
+        rel="noreferrer"
+      >Cotizar por WhatsApp</a>
+    </section>
+
+    <div class="floating-action-buttons">
+      <a
+        class="floating-quote"
+        id="floating-quote"
+        href="https://wa.me/5215500000000?text=Hola%2C%20me%20gustar%C3%ADa%20cotizar%20un%20pedido"
+        target="_blank"
+        rel="noreferrer"
+        aria-label="Cotizar pedido"
+      >
+        <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+          <path d="M7 3h10a2 2 0 0 1 2 2v16l-3-2-3 2-3-2-3 2V5a2 2 0 0 1 2-2Z" />
+          <path d="M9 8h6M9 12h6M9 16h3" />
+        </svg>
+        <span>Cotizar</span>
+        <span class="floating-quote-count" id="cart-count" aria-live="polite">0</span>
+      </a>
+      <button
+        class="floating-cart-toggle"
+        id="cart-toggle"
+        type="button"
+        aria-label="Ver artículos de la lista"
+        aria-controls="cart-panel"
+        aria-expanded="false"
+      >
+        <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+          <path d="M3 4h2l2.2 10.1a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 1.9-1.4L21 8H6" />
+          <circle cx="10" cy="20" r="1" />
+          <circle cx="18" cy="20" r="1" />
+        </svg>
+      </button>
+    </div>
+  </div>
 
   <dialog class="product-image-dialog" id="product-image-dialog" aria-label="Imagen ampliada del producto">
     <button class="product-image-close" id="product-image-close" type="button" aria-label="Cerrar imagen ampliada">
