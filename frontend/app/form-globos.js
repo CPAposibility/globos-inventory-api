@@ -276,6 +276,30 @@ document.addEventListener('DOMContentLoaded', function () {
     return lista.find(item => String(item[valueKey]) === String(id));
   }
 
+  // Comparador para ordenar colores alfabéticamente por nombre.
+  //  - localeCompare con 'es' respeta el alfabeto español (la ñ va después
+  //    de la n, etc.).
+  //  - sensitivity: 'base' ignora mayúsculas y acentos, así "azul", "Azul"
+  //    y "Ázul" se tratan igual y no se separan por cómo se capturaron.
+  //  - Si dos colores se llaman igual (ej. "Rojo" de dos marcas, caso del
+  //    panel de administración), desempata por el nombre de la marca.
+  function compararColores(a, b) {
+    const porNombre = String(a.color).localeCompare(String(b.color), 'es', { sensitivity: 'base' });
+    if (porNombre !== 0) return porNombre;
+    const marcaA = a.Marca ? a.Marca.nombre : '';
+    const marcaB = b.Marca ? b.Marca.nombre : '';
+    return marcaA.localeCompare(marcaB, 'es', { sensitivity: 'base' });
+  }
+
+  // Regresa una copia de la lista de colores ya ordenada alfabéticamente.
+  // Se aplica donde se cargan los colores de una marca, así el select
+  // siempre sale ordenado sin importar el orden en que se insertaron en
+  // la base de datos. (No se ordena dentro de llenarSelect porque ese
+  // helper también llena tamaños y estilos, que no deben ir alfabéticos.)
+  function ordenarColores(lista) {
+    return [...lista].sort(compararColores);
+  }
+
   // Estilos que NO llevan tamaño (son de tamaño único). Se compara con
   // normalizarTexto (mayúsculas, sin acentos), así que "Salchicha",
   // "salchicha" o "SALCHICHA" cuentan igual. Si algún día otro estilo
@@ -314,7 +338,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Estilo sin tamaño:  CIE-SAL-ROJ   (se omite la parte del tamaño)
     const partes = [
       normalizarTexto(marca.nombre).slice(0, 3),
-                          normalizarTexto(estilo.estilo).slice(0, 3)
+      normalizarTexto(estilo.estilo).slice(0, 3)
     ];
     if (!sinTamano) partes.push(String(tamano.tamano).padStart(2, '0'));
     partes.push(colorCode);
@@ -397,7 +421,7 @@ document.addEventListener('DOMContentLoaded', function () {
       // Los colores dependen de la marca — se piden ahora y se guardan
       // para cuando el usuario llegue al select de color.
       try {
-        CATALOGO.coloresPorMarca = await fetchJSON(`${API_BASE}/color?id_marca=${this.value}`);
+        CATALOGO.coloresPorMarca = ordenarColores(await fetchJSON(`${API_BASE}/color?id_marca=${this.value}`));
       } catch (err) {
         console.error(err);
         CATALOGO.coloresPorMarca = [];
@@ -539,7 +563,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Refrescamos la lista de colores de esta marca para que el
         // nuevo color aparezca de inmediato en el select, sin tener
         // que recargar toda la página.
-        CATALOGO.coloresPorMarca = await fetchJSON(`${API_BASE}/color?id_marca=${id_marca}`);
+        CATALOGO.coloresPorMarca = ordenarColores(await fetchJSON(`${API_BASE}/color?id_marca=${id_marca}`));
         llenarSelect(colorSelect, CATALOGO.coloresPorMarca, 'id_color', 'color', 'Selecciona color');
         colorSelect.disabled = false;
 
@@ -586,20 +610,20 @@ document.addEventListener('DOMContentLoaded', function () {
     // mismo resumen de la vista previa + si hay foto lista o no.
     // Si cancela, no se toca nada: el formulario queda como estaba.
     const resumenTexto = previewText.innerHTML
-    .replace(/<br\s*\/?>/gi, '\n')   // saltos de línea
-    .replace(/<[^>]+>/g, '')           // quita las etiquetas HTML
-    .replace(/[ \t]+/g, ' ')
-    .replace(/\n\s+/g, '\n')
-    .trim();
+      .replace(/<br\s*\/?>/gi, '\n')   // saltos de línea
+      .replace(/<[^>]+>/g, '')           // quita las etiquetas HTML
+      .replace(/[ \t]+/g, ' ')
+      .replace(/\n\s+/g, '\n')
+      .trim();
     const textoFoto = fotoSeleccionada
-    ? 'Foto: lista para subir'
-    : 'Foto: NO hay foto seleccionada';
+      ? 'Foto: lista para subir'
+      : 'Foto: NO hay foto seleccionada';
     const confirmado = confirm(
       `¿Confirmas este movimiento?\n\n${resumenTexto}\nCódigo: ${codigo_interno}\n${textoFoto}`
     );
     if (!confirmado) return;
 
-                        btnGuardar.disabled = true;
+    btnGuardar.disabled = true;
     btnGuardar.textContent = 'Guardando...';
 
     try {
@@ -762,74 +786,74 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Hay que identificar el producto: marca + estilo + (tamaño) + color.
     if (!marcaSelect.value || !estiloSelect.value || !colorSelect.value ||
-      (!sinTamano && !tamanoSelect.value)) {
+        (!sinTamano && !tamanoSelect.value)) {
       showToast('Primero selecciona marca, estilo, tamaño (si aplica) y color del producto');
-    return;
+      return;
+    }
+    if (!fotoSeleccionada) {
+      showToast('Primero toma o selecciona una foto');
+      return;
+    }
+
+    btnSoloFoto.disabled = true;
+    btnSoloFoto.textContent = 'Subiendo foto...';
+
+    try {
+      // Buscamos el producto exacto (mismo criterio que el guardado normal).
+      const query = `id_marca=${marcaSelect.value}&id_estilo=${estiloSelect.value}&id_tamano=${sinTamano ? 'null' : tamanoSelect.value}&id_color=${colorSelect.value}`;
+      const existentes = await fetchJSON(`${API_BASE}/globo?${query}`);
+
+      if (existentes.length === 0) {
+        throw new Error('Este producto todavía no existe en el catálogo. Guárdalo primero con un movimiento.');
       }
-      if (!fotoSeleccionada) {
-        showToast('Primero toma o selecciona una foto');
-        return;
+      const globo = existentes[0];
+
+      // Si ya tiene foto y no es admin, el backend lo rechazaría con 403.
+      // Avisamos antes para no gastar la subida.
+      if (globo.foto_url && !esAdmin) {
+        throw new Error('Este producto ya tiene foto. Solo un administrador puede reemplazarla.');
       }
 
-      btnSoloFoto.disabled = true;
-      btnSoloFoto.textContent = 'Subiendo foto...';
+      const confirmado = confirm(
+        `¿Subir esta foto al producto ${globo.codigo_interno || '#' + globo.id_globo}?` +
+        (globo.foto_url ? '\n\nOJO: ya tiene una foto y será REEMPLAZADA.' : '')
+      );
+      if (!confirmado) return;
 
-      try {
-        // Buscamos el producto exacto (mismo criterio que el guardado normal).
-        const query = `id_marca=${marcaSelect.value}&id_estilo=${estiloSelect.value}&id_tamano=${sinTamano ? 'null' : tamanoSelect.value}&id_color=${colorSelect.value}`;
-        const existentes = await fetchJSON(`${API_BASE}/globo?${query}`);
+      const datosFoto = new FormData();
+      datosFoto.append('foto', fotoSeleccionada, 'foto.jpg'); // "foto" = campo que espera multer
+      const resFoto = await fetch(`${API_BASE}/globo/${globo.id_globo}/foto`, {
+        method: 'POST',
+        credentials: 'include',
+        body: datosFoto // sin header Content-Type: el navegador arma el boundary solo
+      });
 
-        if (existentes.length === 0) {
-          throw new Error('Este producto todavía no existe en el catálogo. Guárdalo primero con un movimiento.');
-        }
-        const globo = existentes[0];
-
-        // Si ya tiene foto y no es admin, el backend lo rechazaría con 403.
-        // Avisamos antes para no gastar la subida.
-        if (globo.foto_url && !esAdmin) {
-          throw new Error('Este producto ya tiene foto. Solo un administrador puede reemplazarla.');
-        }
-
-        const confirmado = confirm(
-          `¿Subir esta foto al producto ${globo.codigo_interno || '#' + globo.id_globo}?` +
-          (globo.foto_url ? '\n\nOJO: ya tiene una foto y será REEMPLAZADA.' : '')
-        );
-        if (!confirmado) return;
-
-        const datosFoto = new FormData();
-        datosFoto.append('foto', fotoSeleccionada, 'foto.jpg'); // "foto" = campo que espera multer
-        const resFoto = await fetch(`${API_BASE}/globo/${globo.id_globo}/foto`, {
-          method: 'POST',
-          credentials: 'include',
-          body: datosFoto // sin header Content-Type: el navegador arma el boundary solo
-        });
-
-        if (!resFoto.ok) {
-          const errBody = await resFoto.json().catch(() => ({}));
-          throw new Error(errBody.message || `Error ${resFoto.status} al subir la foto`);
-        }
-
-        showToast(`✓ Foto guardada en ${globo.codigo_interno || 'el producto'}`);
-
-        // Limpiamos el formulario para el siguiente producto.
-        fotoSeleccionada = null;
-        form.reset();
-        estiloSelect.innerHTML = '<option value="">Selecciona estilo</option>';
-        tamanoSelect.innerHTML = '<option value="">Selecciona tamaño</option>';
-        colorSelect.innerHTML = '<option value="">Selecciona color</option>';
-        estiloSelect.disabled = true;
-        tamanoSelect.disabled = true;
-        colorSelect.disabled = true;
-        cantidadInput.disabled = true;
-        codigoInput.value = '';
-        previewText.textContent = 'Completa los campos para ver el resumen.';
-      } catch (err) {
-        console.error(err);
-        showToast(`✗ ${err.message}`, 6000);
-      } finally {
-        btnSoloFoto.disabled = false;
-        btnSoloFoto.textContent = 'Guardar solo la foto';
+      if (!resFoto.ok) {
+        const errBody = await resFoto.json().catch(() => ({}));
+        throw new Error(errBody.message || `Error ${resFoto.status} al subir la foto`);
       }
+
+      showToast(`✓ Foto guardada en ${globo.codigo_interno || 'el producto'}`);
+
+      // Limpiamos el formulario para el siguiente producto.
+      fotoSeleccionada = null;
+      form.reset();
+      estiloSelect.innerHTML = '<option value="">Selecciona estilo</option>';
+      tamanoSelect.innerHTML = '<option value="">Selecciona tamaño</option>';
+      colorSelect.innerHTML = '<option value="">Selecciona color</option>';
+      estiloSelect.disabled = true;
+      tamanoSelect.disabled = true;
+      colorSelect.disabled = true;
+      cantidadInput.disabled = true;
+      codigoInput.value = '';
+      previewText.textContent = 'Completa los campos para ver el resumen.';
+    } catch (err) {
+      console.error(err);
+      showToast(`✗ ${err.message}`, 6000);
+    } finally {
+      btnSoloFoto.disabled = false;
+      btnSoloFoto.textContent = 'Guardar solo la foto';
+    }
   });
 
   // ---------- Panel de administración: eliminar registros ----------
@@ -868,8 +892,8 @@ document.addEventListener('DOMContentLoaded', function () {
                               // Los globos de estilos sin tamaño (Salchicha) tienen id_tamano null:
                               // en ese caso no mostramos nada de pulgadas.
                               const tamanoTxt = item.id_tamano == null
-                              ? ''
-                              : ` ${item.Tamano ? item.Tamano.tamano : `tamaño#${item.id_tamano}`}"`;
+                                ? ''
+                                : ` ${item.Tamano ? item.Tamano.tamano : `tamaño#${item.id_tamano}`}"`;
                               const color = item.Color ? item.Color.color : `color#${item.id_color}`;
                               const foto = ''; // ya no se usa aquí: la foto real se muestra como miniatura (ver render de la lista)
 return `${marca} ${estilo}${tamanoTxt} ${color}${foto} — ${item.codigo_interno || 'sin código'}`;
@@ -886,6 +910,10 @@ return `${marca} ${estilo}${tamanoTxt} ${color}${foto} — ${item.codigo_interno
 
       try {
         const items = await fetchJSON(`${API_BASE}/${recurso}`);
+
+        // La lista de colores también se muestra en orden alfabético
+        // (los demás recursos conservan el orden que regresa la API).
+        if (recurso === 'color') items.sort(compararColores);
 
         if (items.length === 0) {
           adminLista.innerHTML = '<p class="hint">No hay registros.</p>';
