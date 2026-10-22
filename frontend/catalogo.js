@@ -19,6 +19,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   const largeImage = document.getElementById('product-image-large');
   const imageCaption = document.getElementById('product-image-caption');
   const closeImageButton = document.getElementById('product-image-close');
+  const featuredImageTrigger = document.getElementById('featured-image-trigger');
+  const featuredCard = document.querySelector('.product-card');
+  const featuredCardInner = document.getElementById('batukada-card-inner');
+  const featuredCardFront = document.getElementById('batukada-card-front');
+  const featuredCardBack = document.getElementById('batukada-card-back');
+  const featuredCardDetailsLabel = document.getElementById('batukada-details-label');
+  const featuredCardDetailsTitle = document.getElementById('batukada-details-title');
+  const featuredCardDetailsList = document.getElementById('batukada-details-list');
   if (!grid) return;
 
   const carrito = cargarCarrito();
@@ -165,13 +173,150 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  function ampliarImagen(src, nombre) {
+  function ampliarImagen(src, nombre, titulo = nombre) {
     if (!imageDialog || !largeImage) return;
     largeImage.src = src;
     largeImage.alt = nombre;
-    imageCaption.textContent = nombre;
+    imageCaption.textContent = titulo;
+    imageCaption.hidden = !titulo;
     imageDialog.showModal();
   }
+
+  featuredImageTrigger?.addEventListener('click', () => {
+    const image = featuredImageTrigger.querySelector('img');
+    if (image) ampliarImagen(image.currentSrc || image.src, 'Arreglo de globos Batukada', '');
+  });
+
+  const contenidoBatukada = {
+    principal: {
+      etiqueta: 'Contenido del paquete',
+      titulo: 'Para celebrar en grande',
+      productos: [
+        '6 máscaras de neón',
+        '6 collares hawaianos',
+        '6 corbatas',
+        '6 moños',
+        '6 antifaces de neón',
+        '6 antifaces de lente, bigote y nariz',
+        '6 coronas',
+        '6 bombines',
+        '6 diademas de lluvia',
+        '5 mechones',
+        '2 letreros'
+      ]
+    },
+    mini: {
+      etiqueta: 'Contenido de Mini Batukada',
+      titulo: 'Para 30 personas',
+      productos: [
+        '4 máscaras de neón',
+        '4 collares hawaianos',
+        '4 corbatas',
+        '4 moños',
+        '4 antifaces de neón',
+        '4 antifaces de lente, bigote y nariz',
+        '4 coronas',
+        '4 bombines',
+        '4 diademas de lluvia',
+        '4 espantasuegras',
+        '2 mechudos',
+        '2 letreros'
+      ]
+    }
+  };
+  let tipoPaqueteBatukada = 'principal';
+
+  function voltearTarjetaBatukada(mostrarDetalles, devolverFoco = false, tipoPaquete = 'principal') {
+    if (
+      !featuredCard ||
+      !featuredCardInner ||
+      !featuredCardFront ||
+      !featuredCardBack ||
+      !featuredCardDetailsLabel ||
+      !featuredCardDetailsTitle ||
+      !featuredCardDetailsList
+    ) return;
+
+    const tipoPaqueteAnterior = tipoPaqueteBatukada;
+    featuredCard.classList.toggle('is-flipped', mostrarDetalles);
+    featuredCardFront.inert = mostrarDetalles;
+    featuredCardFront.setAttribute('aria-hidden', String(mostrarDetalles));
+    featuredCardBack.inert = !mostrarDetalles;
+    featuredCardBack.setAttribute('aria-hidden', String(!mostrarDetalles));
+    tipoPaqueteBatukada = mostrarDetalles ? tipoPaquete : 'principal';
+    const contenido = contenidoBatukada[tipoPaqueteBatukada];
+    featuredCardDetailsLabel.textContent = contenido.etiqueta;
+    featuredCardDetailsTitle.textContent = contenido.titulo;
+    featuredCardDetailsList.replaceChildren(
+      ...contenido.productos.map((producto) => {
+        const item = document.createElement('li');
+        item.textContent = producto;
+        return item;
+      })
+    );
+    featuredCard.querySelectorAll('.card-flip-toggle, .mini-option-details').forEach((button) => {
+      button.setAttribute('aria-expanded', String(mostrarDetalles && tipoPaqueteBatukada === 'mini'));
+    });
+    featuredCard.querySelector('#batukada-card-front .card-flip-toggle')?.setAttribute(
+      'aria-expanded',
+      String(mostrarDetalles && tipoPaqueteBatukada === 'principal')
+    );
+    featuredCardInner.style.height = `${(mostrarDetalles ? featuredCardBack : featuredCardFront).offsetHeight}px`;
+
+    if (devolverFoco) {
+      if (mostrarDetalles) {
+        featuredCard.querySelector('#batukada-card-back .card-flip-toggle')?.focus();
+      } else if (tipoPaqueteAnterior === 'mini') {
+        featuredCard.querySelector('.mini-option-details')?.focus();
+      } else {
+        featuredCard.querySelector('#batukada-card-front .card-flip-toggle')?.focus();
+      }
+    }
+  }
+
+  voltearTarjetaBatukada(false);
+  window.addEventListener('resize', () => {
+    if (featuredCard?.classList.contains('is-flipped')) {
+      voltearTarjetaBatukada(true);
+    } else {
+      voltearTarjetaBatukada(false);
+    }
+  });
+
+  featuredCard?.addEventListener('click', (event) => {
+    if (!(event.target instanceof Element) || event.target.closest('a, button, input, select, textarea, summary, [contenteditable="true"]')) {
+      return;
+    }
+
+    voltearTarjetaBatukada(!featuredCard.classList.contains('is-flipped'));
+  });
+  featuredCard?.querySelectorAll('.card-flip-toggle').forEach((button) => {
+    button.addEventListener('click', () => {
+      const mostrarDetalles = !featuredCard.classList.contains('is-flipped');
+      voltearTarjetaBatukada(
+        mostrarDetalles,
+        true,
+        mostrarDetalles ? 'principal' : tipoPaqueteBatukada
+      );
+    });
+  });
+  featuredCard?.querySelector('.mini-option-details')?.addEventListener('click', () => {
+    voltearTarjetaBatukada(true, true, 'mini');
+  });
+  featuredCard?.querySelector('.mini-option')?.addEventListener('click', (event) => {
+    if (!(event.target instanceof Element) || event.target.closest('button')) return;
+    event.stopPropagation();
+    voltearTarjetaBatukada(true, false, 'mini');
+  });
+  featuredCard?.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      if (!(event.target instanceof Element) || event.target.closest('a, button, input, select, textarea, summary, [contenteditable="true"]')) {
+        return;
+      }
+      event.preventDefault();
+      voltearTarjetaBatukada(!featuredCard.classList.contains('is-flipped'), false);
+    }
+  });
 
   closeImageButton?.addEventListener('click', () => imageDialog.close());
   imageDialog?.addEventListener('click', (event) => {

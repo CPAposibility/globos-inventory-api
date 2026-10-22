@@ -93,25 +93,88 @@
       -->
       <div class="hero-visual" aria-label="Producto destacado">
         <div class="product-card">
-          <div class="card-top">
-            <span class="mini-badge">Lo mas vendido</span>
-            <span class="mini-price">$100</span>
-          </div>
+          <div class="product-card-inner" id="batukada-card-inner">
+            <div class="product-card-face product-card-front" id="batukada-card-front">
+              <button
+                class="product-card-image-trigger"
+                id="featured-image-trigger"
+                type="button"
+                aria-label="Ampliar imagen de Batukada"
+              >
+                <img
+                  class="product-card-image"
+                  src="ilustraciones/batukada3.jpg"
+                  alt=""
+                />
+              </button>
+              <div class="card-top">
+                <span class="mini-badge">Favorito para tu fiesta</span>
+              </div>
 
-          <h2>Batukada</h2>
+              <div class="card-heading">
+                <h2>Batukada</h2>
+                <p>Color, ritmo y diversión para celebrar en grande.</p>
+              </div>
 
-          <div class="mini-grid">
-            <div>
-              <span>Incluye</span>
-              <strong>75 piezas</strong>
+              <div class="package-highlight">
+                <div class="package-details">
+                  <span>Paquete principal</span>
+                  <strong>Para 65 personas</strong>
+                </div>
+                <div class="package-price">
+                  <span>Precio</span>
+                  <strong>$120</strong>
+                  <small>pesos</small>
+                </div>
+              </div>
+
+              <div class="mini-option">
+                <div class="mini-option-copy">
+                  <span>Una opción más pequeña</span>
+                  <strong>Mini Batukada · Para 30 personas</strong>
+                </div>
+                <strong class="mini-option-price">$100</strong>
+                <button
+                  class="mini-option-details"
+                  type="button"
+                  aria-controls="batukada-card-inner"
+                  aria-expanded="false"
+                >Ver qué incluye</button>
+              </div>
+
+              <a class="card-btn" href="#contacto">Quiero mi paquete</a>
+              <button
+                class="card-flip-toggle"
+                type="button"
+                aria-controls="batukada-card-inner"
+                aria-expanded="false"
+              >Ver qué incluye</button>
             </div>
-            <div>
-              <span>Mini Batukada</span>
-              <strong>55 piezas por solo $100 pesos</strong>
+
+            <div class="product-card-face product-card-back" id="batukada-card-back" aria-hidden="true" inert>
+              <span class="mini-badge" id="batukada-details-label">Contenido del paquete</span>
+              <h2 id="batukada-details-title">Para celebrar en grande</h2>
+              <ul class="package-list" id="batukada-details-list">
+                <li>6 máscaras de neón</li>
+                <li>6 collares hawaianos</li>
+                <li>6 corbatas</li>
+                <li>6 moños</li>
+                <li>6 antifaces de neón</li>
+                <li>6 antifaces de lente, bigote y nariz</li>
+                <li>6 coronas</li>
+                <li>6 bombines</li>
+                <li>6 diademas de lluvia</li>
+                <li>5 mechones</li>
+                <li>2 letreros</li>
+              </ul>
+              <button
+                class="card-flip-toggle"
+                type="button"
+                aria-controls="batukada-card-inner"
+                aria-expanded="true"
+              >Volver al paquete</button>
             </div>
           </div>
-
-          <a class="card-btn" href="#contacto">Ver paquete</a>
         </div>
 
         <div class="floating-badge">Entrega rápida</div>
@@ -297,7 +360,7 @@
       <span aria-hidden="true">&times;</span>
     </button>
     <img id="product-image-large" alt="" />
-    <p id="product-image-caption"></p>
+    <p id="product-image-caption" hidden></p>
   </dialog>
 
   <script src="catalogo.js"></script>
