@@ -22,6 +22,31 @@
       <button type="button" id="btn-logout" class="btn-logout">Cerrar sesión</button>
     </div>
 
+    <!--
+      Barra de secciones: queda FIJA en la parte de arriba (position:
+      sticky en el CSS) para cambiar de sección sin perder el lugar.
+      Cada botón lleva data-seccion con la clave de la sección; el
+      script form-secciones.js muestra el panel que tenga el mismo
+      data-panel y oculta los demás.
+      El texto es corto para que quepa en el celular (la barra se
+      desliza de lado si no cabe); el nombre completo va en "title".
+    -->
+    <nav class="section-nav" role="tablist" aria-label="Secciones de productos">
+      <button type="button" class="section-tab active" role="tab" aria-selected="true"  data-seccion="globos"     title="Globos (clásicos)">Globos</button>
+      <button type="button" class="section-tab"        role="tab" aria-selected="false" data-seccion="personajes" title="Globos de personajes">Personajes</button>
+      <button type="button" class="section-tab"        role="tab" aria-selected="false" data-seccion="arcos"      title="Arcos de globo">Arcos</button>
+      <button type="button" class="section-tab"        role="tab" aria-selected="false" data-seccion="batukada"   title="Batukada">Batukada</button>
+      <button type="button" class="section-tab"        role="tab" aria-selected="false" data-seccion="luz"        title="Artículos de luz">Luz</button>
+      <button type="button" class="section-tab"        role="tab" aria-selected="false" data-seccion="cd5"        title="CD-5">CD-5</button>
+    </nav>
+
+    <!--
+      PANEL DE GLOBOS (clásicos): es el formulario de siempre, sin
+      cambios. Solo se envolvió en una <section> para poder mostrarlo
+      u ocultarlo desde la barra de secciones. Todos sus ids siguen
+      igual, así que form-globos.js funciona exactamente como antes.
+    -->
+    <section id="panel-globos" class="seccion-panel" data-panel="globos">
     <div class="header-with-buttons">
       <h1>Registro de Globos</h1>
       <div class="button-group">
@@ -188,6 +213,32 @@
       <div id="admin-lista" class="admin-lista"></div>
     </div>
 
+    </section>
+
+    <!-- Secciones que todavía no tienen formulario: solo muestran un aviso. -->
+    <section id="panel-personajes" class="seccion-panel" data-panel="personajes" hidden>
+      <h1>Globos de personajes</h1>
+      <p class="seccion-proximamente">Próximamente: aquí irá el formulario de esta sección.</p>
+    </section>
+
+    <section id="panel-arcos" class="seccion-panel" data-panel="arcos" hidden>
+      <h1>Arcos de globo</h1>
+      <p class="seccion-proximamente">Próximamente: aquí irá el formulario de esta sección.</p>
+    </section>
+
+    <section id="panel-luz" class="seccion-panel" data-panel="luz" hidden>
+      <h1>Artículos de luz</h1>
+      <p class="seccion-proximamente">Próximamente: aquí irá el formulario de esta sección.</p>
+    </section>
+
+    <!--
+      Secciones con formulario propio: Batukada y CD-5. Están vacías a
+      propósito: form-secciones.js dibuja su formulario la primera vez
+      que se abren (así la página de Globos carga igual de rápido).
+    -->
+    <section id="panel-batukada" class="seccion-panel" data-panel="batukada" hidden></section>
+    <section id="panel-cd5" class="seccion-panel" data-panel="cd5" hidden></section>
+
     <!-- Inputs de archivo (ocultos) -->
     <input type="file" name="foto_producto" id="foto_producto_input" accept="image/*" capture="environment" style="display:none">
     <input type="file" name="foto_archivo" id="foto_archivo_input" accept="image/*" style="display:none">
@@ -208,5 +259,6 @@
   <script src="/session.js"></script>
   <script src="config.js"></script>
   <script src="form-globos.js"></script>
+  <script src="form-secciones.js"></script>
 </body>
 </html>
